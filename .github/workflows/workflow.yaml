@@ -21,7 +21,7 @@ jobs:
         with:
           name: Windows release
           path: |
-            build/windows/runner
+            build/windows/x64/runner/Release
   build-linux:
     runs-on: ubuntu-latest
     steps:
