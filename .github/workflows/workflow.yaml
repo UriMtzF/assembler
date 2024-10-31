@@ -39,3 +39,9 @@ jobs:
         run: dart pub get
       - name: Build artifacts
         run: flutter build linux
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Linux release
+          path: |
+            build/linux/x64/release/bundle
