@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:any_syntax_highlighter/any_syntax_highlighter.dart';
+import 'package:any_syntax_highlighter/themes/any_syntax_highlighter_theme_collection.dart';
 import 'package:assembler/control/controller.dart';
 import 'package:assembler/model/analizer.dart';
 import 'package:flutter/material.dart';
@@ -131,22 +133,14 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: TextEditingController(
-                      text: paginatedCode[currentCodePage].join('\n'),
-                    ),
+                  child: AnySyntaxHighlighter(
+                    paginatedCode[currentCodePage].join('\n'),
+                    lineNumbers: false,
+                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
+                    isSelectableText: true,
+                    padding: 100,
+                    margin: 10,
                     maxLines: 15,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      label: Text(
-                        "Código fuente",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      border: InputBorder.none,
-                    ),
                   ),
                 ),
                 Row(
@@ -173,22 +167,14 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: TextEditingController(
-                      text: paginatedToken[currentTokenPage].join('\n'),
-                    ),
+                  child: AnySyntaxHighlighter(
+                    paginatedToken[currentTokenPage].join('\n'),
+                    lineNumbers: true,
+                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
+                    isSelectableText: true,
+                    padding: 100,
+                    margin: 10,
                     maxLines: 15,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      label: Text(
-                        "Tokens",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      border: InputBorder.none,
-                    ),
                   ),
                 ),
                 Row(
@@ -215,22 +201,14 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: TextEditingController(
-                      text: paginatedType[currentTypePage].join('\n'),
-                    ),
+                  child: AnySyntaxHighlighter(
+                    paginatedType[currentTypePage].join('\n'),
+                    lineNumbers: true,
+                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
+                    isSelectableText: true,
+                    padding: 100,
+                    margin: 10,
                     maxLines: 15,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      label: Text(
-                        "Tipo",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      border: InputBorder.none,
-                    ),
                   ),
                 ),
                 Row(
