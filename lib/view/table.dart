@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:any_syntax_highlighter/any_syntax_highlighter.dart';
-import 'package:any_syntax_highlighter/themes/any_syntax_highlighter_theme_collection.dart';
 import 'package:assembler/control/controller.dart';
 import 'package:assembler/model/analizer.dart';
+import 'package:code_text_field/code_text_field.dart';
+import 'package:highlight/languages/x86asm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +27,10 @@ class _TokenTableState extends ConsumerState<TokenTable> {
   int currentCodePage = 0;
   int currentTokenPage = 0;
   int currentTypePage = 0;
+
+  CodeController? codeController;
+  CodeController? tokenController;
+  CodeController? typeController;
 
   @override
   void initState() {
@@ -124,6 +128,16 @@ class _TokenTableState extends ConsumerState<TokenTable> {
         updateLines(analizer.code, analizer.tokens, analizer.types);
       }
     }
+    codeController = CodeController(
+      text: paginatedCode[currentCodePage].join('\n'),
+      language: x86Asm,
+    );
+    tokenController = CodeController(
+      text: paginatedToken[currentTokenPage].join('\n'),
+    );
+    typeController = CodeController(
+      text: paginatedType[currentTypePage].join('\n'),
+    );
 
     return Padding(
       padding: const EdgeInsets.all(10.0),
@@ -133,14 +147,11 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: AnySyntaxHighlighter(
-                    paginatedCode[currentCodePage].join('\n'),
-                    lineNumbers: false,
-                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
-                    isSelectableText: true,
-                    padding: 100,
-                    margin: 10,
+                  child: CodeField(
+                    controller: codeController!,
                     maxLines: 15,
+                    readOnly: true,
+                    lineNumbers: false,
                   ),
                 ),
                 Row(
@@ -150,6 +161,10 @@ class _TokenTableState extends ConsumerState<TokenTable> {
                       onPressed: previousPageCode,
                       label: const Icon(Icons.arrow_left),
                     ),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    Text('Página ${currentCodePage + 1}'),
                     const SizedBox(
                       width: 20,
                     ),
@@ -167,14 +182,11 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: AnySyntaxHighlighter(
-                    paginatedToken[currentTokenPage].join('\n'),
-                    lineNumbers: true,
-                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
-                    isSelectableText: true,
-                    padding: 100,
-                    margin: 10,
+                  child: CodeField(
+                    controller: tokenController!,
                     maxLines: 15,
+                    readOnly: true,
+                    lineNumbers: false,
                   ),
                 ),
                 Row(
@@ -184,6 +196,10 @@ class _TokenTableState extends ConsumerState<TokenTable> {
                       onPressed: previousPageToken,
                       label: const Icon(Icons.arrow_left),
                     ),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    Text('Página ${currentTokenPage + 1}'),
                     const SizedBox(
                       width: 20,
                     ),
@@ -201,14 +217,11 @@ class _TokenTableState extends ConsumerState<TokenTable> {
             child: Column(
               children: [
                 Expanded(
-                  child: AnySyntaxHighlighter(
-                    paginatedType[currentTypePage].join('\n'),
-                    lineNumbers: true,
-                    theme: AnySyntaxHighlighterThemeCollection.githubWebTheme(),
-                    isSelectableText: true,
-                    padding: 100,
-                    margin: 10,
+                  child: CodeField(
+                    controller: typeController!,
                     maxLines: 15,
+                    readOnly: true,
+                    lineNumbers: false,
                   ),
                 ),
                 Row(
@@ -218,6 +231,10 @@ class _TokenTableState extends ConsumerState<TokenTable> {
                       onPressed: previousPageType,
                       label: const Icon(Icons.arrow_left),
                     ),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    Text('Página ${currentTokenPage + 1}'),
                     const SizedBox(
                       width: 20,
                     ),

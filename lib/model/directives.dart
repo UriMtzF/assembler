@@ -8,6 +8,8 @@ enum Directive {
   bracket,
   doubleQuotes,
   singleQuotes,
+  defineByte,
+  defineWord,
 }
 
 enum TokenType {
@@ -53,6 +55,8 @@ final Map<Directive, RegExp> directiveRegExp = {
   Directive.bracket: RegExp(r'\[[^\]]+\]'),
   Directive.doubleQuotes: RegExp(r'"[^"]*"'),
   Directive.singleQuotes: RegExp(r"'[^']*'"),
+  Directive.defineByte: RegExp(r'db'),
+  Directive.defineWord: RegExp(r'dw'),
 };
 
 final Set<String> instructions = {
