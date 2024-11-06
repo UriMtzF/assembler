@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:assembler/control/controller.dart';
-import 'package:assembler/view/table.dart';
+import 'package:assembler/view/explorer.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +13,7 @@ class MainView extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       appBar: MainBar(),
-      body: TokenTable(),
+      body: Explorer(),
     );
   }
 }

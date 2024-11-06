@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:assembler/view/main_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   runApp(
@@ -18,9 +19,17 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Ensamblador',
       locale: const Locale('es', 'ES'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'),
+      ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purple, brightness: Brightness.dark),
+            seedColor: Colors.pink, brightness: Brightness.light),
         useMaterial3: true,
       ),
       home: const MainView(),
