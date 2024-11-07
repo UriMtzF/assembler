@@ -11,11 +11,15 @@ class Analizer {
     this.types = const [""],
   });
 
+  // Setter for code
   set setCode(List<String> code) {
     List<String> tokenizedCode = [];
+    // Iterates all lines of code
     for (String line in code) {
       String modifiedLine = _lowerCase(line);
+      // Delete all comments, delete all blank spaces, make it lower case
       if (modifiedLine.isNotEmpty) {
+        // If line is not empty save it
         tokenizedCode.add(modifiedLine);
       }
     }
@@ -46,8 +50,10 @@ class Analizer {
     return parts.join();
   }
 
+  // Make tokens of code
   void tokenize() {
     List<String> tokenizedCode = [];
+    // Iterates all lines of code
     for (String line in code) {
       String modifiedLine = line;
       Map<String, String> compundTokens = {};
@@ -82,24 +88,32 @@ class Analizer {
 
   void identifyTypes() {
     List<String> types = [];
+    // Iterate all lines of tokens
     for (String token in tokens) {
       TokenType type;
-
+      // If the token is in RegEx of PseudoInstructions set its type
       if (directiveRegExp.values.any((regex) => regex.hasMatch(token))) {
         type = TokenType.compundDirective;
+        // If the token is in the Instruction Set, set it as Instruction
       } else if (instructions.contains(token)) {
         type = TokenType.instruction;
+        // If the token is in the Register Set, set it as Register
       } else if (registers.contains(token)) {
         type = TokenType.register;
+        // If the token is detected in the Number RegEx, set it as Number
       } else if (numberRegExp.hasMatch(token)) {
         type = TokenType.number;
+        // If the token is detected in the Label RegEx, set it as Label
       } else if (labelRegExp.hasMatch(token)) {
         type = TokenType.label;
       } else {
+        // If no other type is detected set it as unknown
         type = TokenType.unknown;
       }
+      // Add the token type to the list
       types.add(type.description);
     }
+    // Save the types to the attribute of the class
     if (types.isNotEmpty) {
       this.types = types;
     }

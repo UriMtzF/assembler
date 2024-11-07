@@ -1,3 +1,4 @@
+// Enumerate all the pseudoinstruction types
 enum Directive {
   codeSegment,
   dataSegment,
@@ -10,8 +11,10 @@ enum Directive {
   singleQuotes,
   defineByte,
   defineWord,
+  end,
 }
 
+// Enumerate all token types
 enum TokenType {
   instruction,
   register,
@@ -22,6 +25,7 @@ enum TokenType {
   unknown,
 }
 
+// Set the description for each token type
 extension TokenTypeExtension on TokenType {
   String get description {
     switch (this) {
@@ -45,6 +49,7 @@ extension TokenTypeExtension on TokenType {
   }
 }
 
+// Map each pseudoinstruction type with its Regular Expresion
 final Map<Directive, RegExp> directiveRegExp = {
   Directive.codeSegment: RegExp(r'\.code segment\b'),
   Directive.dataSegment: RegExp(r'\.data segment\b'),
@@ -57,8 +62,10 @@ final Map<Directive, RegExp> directiveRegExp = {
   Directive.singleQuotes: RegExp(r"'[^']*'"),
   Directive.defineByte: RegExp(r'db'),
   Directive.defineWord: RegExp(r'dw'),
+  Directive.end: RegExp(r'ends\b'),
 };
 
+// List all instructions
 final Set<String> instructions = {
   "aaa",
   "aad",
@@ -178,6 +185,7 @@ final Set<String> instructions = {
   "xor"
 };
 
+// List all registers
 final Set<String> registers = {
   'ax',
   'bx',
@@ -197,6 +205,8 @@ final Set<String> registers = {
   'dl'
 };
 
+// Regular Expresion for number types (Hex, Dec, Bin)
 final RegExp numberRegExp =
     RegExp(r'^\d+d?$|^[01]+b$|^0x[0-9a-f]+$|^[0-9a-f]+h$');
+// Regular Expresion for valid labels
 final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$');
