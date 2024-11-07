@@ -14,8 +14,7 @@ class Analizer {
   set setCode(List<String> code) {
     List<String> tokenizedCode = [];
     for (String line in code) {
-      String modifiedLine =
-          line.replaceAll(RegExp(r';.*$'), '').trim().toLowerCase();
+      String modifiedLine = _lowerCase(line);
       if (modifiedLine.isNotEmpty) {
         tokenizedCode.add(modifiedLine);
       }
@@ -23,6 +22,28 @@ class Analizer {
     this.code = tokenizedCode;
     tokenize();
     identifyTypes();
+  }
+
+  String _lowerCase(String line) {
+    line = line.replaceAll(RegExp(r';.*$'), '').trim();
+
+    RegExp regex = RegExp(r'''(["\']).*?\1''');
+
+    List<String> parts = [];
+    int lastIndex = 0;
+
+    for (final match in regex.allMatches(line)) {
+      if (lastIndex < match.start) {
+        parts.add(line.substring(lastIndex, match.start).toLowerCase());
+      }
+      parts.add(match.group(0)!);
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < line.length) {
+      parts.add(line.substring(lastIndex).toLowerCase());
+    }
+    return parts.join();
   }
 
   void tokenize() {

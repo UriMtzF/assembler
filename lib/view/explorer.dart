@@ -7,7 +7,9 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// ignore: depend_on_referenced_packages
 import 'package:highlight/languages/x86asm.dart';
+// ignore: depend_on_referenced_packages
 import 'package:flutter_highlight/themes/atom-one-light.dart';
 
 List<String> _tokens = [];
