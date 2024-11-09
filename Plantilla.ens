@@ -2,53 +2,27 @@
 
 .model small
 
-. stack 64
-
-stack segment
 
 .stack segment
-
- db   256  dup(0)
-
- db   100  doble (‘a’)
 
  dw   256  dup(0)
 
 ends
 
 
-
-;data
-
-data segment
-
 .data segment
 
 ;Variables
 
-Soymuylarga db 0
+var1 db 'hola'
 
- 	cad1 db “programa de $...  prueba “
-
-    	var1 db hola'
-
-cad2 db “programa de $...  prueba
+cad2 db "programa de prueba"
 
 var2 dw 0
 
 tecla db 5
 
-Vtecla bd 0fh
-
-7tecla Wd 0
-
-7tecla dw 0
-
-Teclamuylarga db 0
-
 cons1 equ 45
-
-con2 equa 345
 
 con2 equ 345
 
@@ -56,11 +30,7 @@ simbolo db 045H
 
 tecla dw 045H
 
-simbin db 001111101b
-
 sb db 11110000b
-
-sb2 dw 11110000110011001b
 
 edad db 15
 
@@ -73,14 +43,7 @@ menor db 'ERES MENOR DE EDAD...','$'
 ends
 
 
-
-code segment
-
-. code
-
 .code segment
-
-begin proc far
 
 mov ax,@data
 
@@ -116,13 +79,6 @@ mov ax,04c00h
 
 int 21h
 
-begin endp
-
-
-
-
-
-code
 
 mov ah, 1 ;Leer un caracter de la entrada estandar
 

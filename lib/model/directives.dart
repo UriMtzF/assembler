@@ -26,6 +26,7 @@ enum TokenType {
   label,
   directive,
   compundDirective,
+  dataSegment,
   unknown,
 }
 
@@ -33,6 +34,8 @@ enum TokenType {
 extension TokenTypeExtension on TokenType {
   String get description {
     switch (this) {
+      case TokenType.symbol:
+        return 'Símbolo';
       case TokenType.instruction:
         return 'Instrucción';
       case TokenType.register:
@@ -49,6 +52,8 @@ extension TokenTypeExtension on TokenType {
         return 'Directiva';
       case TokenType.compundDirective:
         return 'Pseudoinstrucción';
+      case TokenType.dataSegment:
+        return 'Segmento de datos';
       case TokenType.unknown:
         return 'Desconocido';
       default:
@@ -218,9 +223,9 @@ final Set<String> registers = {
 };
 
 // Regular Expresion for number types (Hex, Dec, Bin)
-final RegExp decNumberRegExp = RegExp(r'\d{3}|\d{5}');
-final RegExp binNumberRegExp = RegExp(r'^[01]{8}b|^[01]{16}b$');
-final RegExp hexNumberRegExp =
-    RegExp(r'\b(0x[a-f0-9]{2}|0x[a-f0-9]{4}|0[a-f0-9]{2}|0[a-f0-9]{4})h\b');
+final RegExp decNumberRegExp = RegExp(r'\b\d+\b');
+final RegExp binNumberRegExp = RegExp(r'^[01]b$');
+final RegExp hexNumberRegExp = RegExp(r'\b0x?[0-9a-f]+h$');
 // Regular Expresion for valid labels
-final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*:$');
+final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$');
+final RegExp dataSegRegExp = RegExp(r'@data$');
