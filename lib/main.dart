@@ -29,7 +29,7 @@ class MyApp extends ConsumerWidget {
       ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink, brightness: Brightness.light),
+            seedColor: Colors.pink, brightness: Brightness.dark),
         useMaterial3: true,
       ),
       home: const MainView(),

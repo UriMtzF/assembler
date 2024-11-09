@@ -9,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ignore: depend_on_referenced_packages
 import 'package:highlight/languages/x86asm.dart';
-// ignore: depend_on_referenced_packages
+// ignore: depend_on_referenced_packages, unused_import
 import 'package:flutter_highlight/themes/atom-one-light.dart';
+// ignore: depend_on_referenced_packages, unused_import
+import 'package:flutter_highlight/themes/atom-one-dark.dart';
 
 List<String> _tokens = [];
 List<String> _types = [];
@@ -65,7 +67,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
               ),
               Expanded(
                 child: CodeTheme(
-                  data: const CodeThemeData(styles: atomOneLightTheme),
+                  data: const CodeThemeData(styles: atomOneDarkTheme),
                   child: CodeField(
                     controller: codeController,
                     expands: true,
@@ -75,6 +77,9 @@ class _ExplorerState extends ConsumerState<Explorer> {
               ),
             ],
           ),
+        ),
+        const SizedBox(
+          width: 10,
         ),
         Expanded(
           child: Column(

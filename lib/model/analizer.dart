@@ -92,7 +92,7 @@ class Analizer {
       TokenType type;
       if (directiveRegExp.values.any((regex) => regex.hasMatch(token))) {
         type = TokenType.compundDirective;
-      } else if (registers.contains(token)) {
+      } else if (instructions.contains(token)) {
         type = TokenType.instruction;
       } else if (symbols.contains(token)) {
         type = TokenType.symbol;
@@ -104,6 +104,8 @@ class Analizer {
         type = TokenType.binNumber;
       } else if (hexNumberRegExp.hasMatch(token)) {
         type = TokenType.hexNumber;
+      } else if (dataSegRegExp.hasMatch(token)) {
+        type = TokenType.dataSegment;
       } else if (labelRegExp.hasMatch(token)) {
         type = TokenType.label;
       } else {
