@@ -38,17 +38,19 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
             );
 
             if (result != null) {
-              ref
-                  .read(fileProvider.notifier)
-                  .setFile(File(result.files.single.path!));
+              File file = File(result.files.single.path!);
+              if (file.path.endsWith('.ens')) {
+                ref
+                    .read(fileProvider.notifier)
+                    .setFile(File(result.files.single.path!));
+              } else {
+                if (context.mounted) {
+                  _showError(context);
+                }
+              }
             } else {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("No seleccionaste un archivo válido"),
-                    duration: Duration(seconds: 5),
-                  ),
-                );
+                _showError(context);
               }
             }
           },
@@ -57,4 +59,13 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
       ],
     );
   }
+}
+
+void _showError(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("No seleccionaste un archivo válido"),
+      duration: Duration(seconds: 5),
+    ),
+  );
 }

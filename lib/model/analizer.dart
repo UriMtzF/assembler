@@ -88,32 +88,29 @@ class Analizer {
 
   void identifyTypes() {
     List<String> types = [];
-    // Iterate all lines of tokens
     for (String token in tokens) {
       TokenType type;
-      // If the token is in RegEx of PseudoInstructions set its type
       if (directiveRegExp.values.any((regex) => regex.hasMatch(token))) {
         type = TokenType.compundDirective;
-        // If the token is in the Instruction Set, set it as Instruction
-      } else if (instructions.contains(token)) {
+      } else if (registers.contains(token)) {
         type = TokenType.instruction;
-        // If the token is in the Register Set, set it as Register
+      } else if (symbols.contains(token)) {
+        type = TokenType.symbol;
       } else if (registers.contains(token)) {
         type = TokenType.register;
-        // If the token is detected in the Number RegEx, set it as Number
-      } else if (numberRegExp.hasMatch(token)) {
-        type = TokenType.number;
-        // If the token is detected in the Label RegEx, set it as Label
+      } else if (decNumberRegExp.hasMatch(token)) {
+        type = TokenType.decNumber;
+      } else if (binNumberRegExp.hasMatch(token)) {
+        type = TokenType.binNumber;
+      } else if (hexNumberRegExp.hasMatch(token)) {
+        type = TokenType.hexNumber;
       } else if (labelRegExp.hasMatch(token)) {
         type = TokenType.label;
       } else {
-        // If no other type is detected set it as unknown
         type = TokenType.unknown;
       }
-      // Add the token type to the list
       types.add(type.description);
     }
-    // Save the types to the attribute of the class
     if (types.isNotEmpty) {
       this.types = types;
     }

@@ -1,5 +1,6 @@
 // Enumerate all the pseudoinstruction types
 enum Directive {
+  model,
   codeSegment,
   dataSegment,
   stackSegment,
@@ -17,8 +18,11 @@ enum Directive {
 // Enumerate all token types
 enum TokenType {
   instruction,
+  symbol,
   register,
-  number,
+  decNumber,
+  binNumber,
+  hexNumber,
   label,
   directive,
   compundDirective,
@@ -33,8 +37,12 @@ extension TokenTypeExtension on TokenType {
         return 'Instrucción';
       case TokenType.register:
         return 'Registro';
-      case TokenType.number:
-        return 'Número';
+      case TokenType.decNumber:
+        return 'Número decimal';
+      case TokenType.binNumber:
+        return 'Número binario';
+      case TokenType.hexNumber:
+        return 'Número hexadecimal';
       case TokenType.label:
         return 'Etiqueta';
       case TokenType.directive:
@@ -51,6 +59,7 @@ extension TokenTypeExtension on TokenType {
 
 // Map each pseudoinstruction type with its Regular Expresion
 final Map<Directive, RegExp> directiveRegExp = {
+  Directive.model: RegExp(r'\.model small\b'),
   Directive.codeSegment: RegExp(r'\.code segment\b'),
   Directive.dataSegment: RegExp(r'\.data segment\b'),
   Directive.stackSegment: RegExp(r'\.stack segment\b'),
@@ -66,19 +75,15 @@ final Map<Directive, RegExp> directiveRegExp = {
 };
 
 // List all instructions
-final Set<String> instructions = {
-  "aaa",
+final Set<String> symbols = {
   "aad",
   "aam",
   "aas",
   "adc",
   "add",
-  "and",
   "call",
   "cbw",
   "clc",
-  "cld",
-  "cli",
   "cmc",
   "cmp",
   "cmpsb",
@@ -86,10 +91,8 @@ final Set<String> instructions = {
   "cwd",
   "daa",
   "das",
-  "dec",
   "div",
   "hlt",
-  "idiv",
   "imul",
   "in",
   "inc",
@@ -97,15 +100,12 @@ final Set<String> instructions = {
   "into",
   "iret",
   "ja",
-  "jae",
   "jb",
   "jbe",
   "jc",
-  "jcxz",
   "je",
   "jg",
   "jge",
-  "jl",
   "jle",
   "jmp",
   "jna",
@@ -115,15 +115,12 @@ final Set<String> instructions = {
   "jnc",
   "jne",
   "jng",
-  "jnge",
   "jnl",
   "jnle",
   "jno",
-  "jnp",
   "jns",
   "jnz",
   "jo",
-  "jp",
   "jpe",
   "jpo",
   "js",
@@ -140,18 +137,14 @@ final Set<String> instructions = {
   "loopnz",
   "loopz",
   "mov",
-  "movsb",
-  "movsw",
   "mul",
   "neg",
   "nop",
   "not",
   "or",
   "out",
-  "pop",
   "popa",
   "popf",
-  "push",
   "pusha",
   "pushf",
   "rcl",
@@ -164,7 +157,6 @@ final Set<String> instructions = {
   "ret",
   "retf",
   "rol",
-  "ror",
   "sahf",
   "sal",
   "sar",
@@ -178,11 +170,31 @@ final Set<String> instructions = {
   "sti",
   "stosb",
   "stosw",
-  "sub",
   "test",
   "xchg",
+};
+
+final Set<String> instructions = {
+  "cld",
+  "cli",
+  "movsb",
+  "movsw",
   "xlatb",
-  "xor"
+  "aaa",
+  "pop",
+  "idiv",
+  "push",
+  "dec",
+  "ror",
+  "sub",
+  "xor",
+  "and",
+  "jae",
+  "jcxz",
+  "jl",
+  "jnge",
+  "jnp",
+  "jp"
 };
 
 // List all registers
@@ -206,7 +218,9 @@ final Set<String> registers = {
 };
 
 // Regular Expresion for number types (Hex, Dec, Bin)
-final RegExp numberRegExp =
-    RegExp(r'^\d+d?$|^[01]+b$|^0x[0-9a-f]+$|^[0-9a-f]+h$');
+final RegExp decNumberRegExp = RegExp(r'\d{3}|\d{5}');
+final RegExp binNumberRegExp = RegExp(r'^[01]{8}b|^[01]{16}b$');
+final RegExp hexNumberRegExp =
+    RegExp(r'\b(0x[a-f0-9]{2}|0x[a-f0-9]{4}|0[a-f0-9]{2}|0[a-f0-9]{4})h\b');
 // Regular Expresion for valid labels
-final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$');
+final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*:$');
