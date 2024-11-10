@@ -40,12 +40,12 @@ class Analizer {
       if (lastIndex < match.start) {
         parts.add(line.substring(lastIndex, match.start).toLowerCase());
       }
-      parts.add(match.group(0)!);
+      parts.add(match.group(0)!.trim());
       lastIndex = match.end;
     }
 
     if (lastIndex < line.length) {
-      parts.add(line.substring(lastIndex).toLowerCase());
+      parts.add(line.substring(lastIndex).toLowerCase().trim());
     }
     return parts.join();
   }
@@ -100,18 +100,18 @@ class Analizer {
           .key;
 
       if (type == TokenType.unknown) {
-        if (registers.contains(token)) {
+        if (instructions.contains(token)) {
           type = TokenType.instruction;
         } else if (symbols.contains(token)) {
           type = TokenType.symbol;
         } else if (registers.contains(token)) {
           type = TokenType.register;
-        } else if (decNumberRegExp.hasMatch(token)) {
-          type = TokenType.decNumber;
-        } else if (binNumberRegExp.hasMatch(token)) {
-          type = TokenType.binNumber;
         } else if (hexNumberRegExp.hasMatch(token)) {
           type = TokenType.hexNumber;
+        } else if (binNumberRegExp.hasMatch(token)) {
+          type = TokenType.binNumber;
+        } else if (decNumberRegExp.hasMatch(token)) {
+          type = TokenType.decNumber;
         } else if (labelRegExp.hasMatch(token)) {
           type = TokenType.label;
         }

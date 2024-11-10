@@ -27,6 +27,8 @@ enum TokenType {
 extension TokenTypeExtension on TokenType {
   String get description {
     switch (this) {
+      case TokenType.symbol:
+        return 'Símbolo';
       case TokenType.instruction:
         return 'Instrucción';
       case TokenType.register:
@@ -236,9 +238,8 @@ final Set<String> registers = {
 };
 
 // Regular Expresion for number types (Hex, Dec, Bin)
-final RegExp decNumberRegExp = RegExp(r'\d{3}|\d{5}');
-final RegExp binNumberRegExp = RegExp(r'^[01]{8}b|^[01]{16}b$');
-final RegExp hexNumberRegExp =
-    RegExp(r'\b(0x[a-f0-9]{2}|0x[a-f0-9]{4}|0[a-f0-9]{2}|0[a-f0-9]{4})h\b');
+final RegExp decNumberRegExp = RegExp(r'^\d+');
+final RegExp binNumberRegExp = RegExp(r'^[01]+b\b$');
+final RegExp hexNumberRegExp = RegExp(r'^(0x|0)[a-f0-9]+h\b');
 // Regular Expresion for valid labels
-final RegExp labelRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*:$');
+final RegExp labelRegExp = RegExp(r'\b[a-zA-Z_][a-zA-Z0-9_]*(:?)');
