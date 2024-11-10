@@ -1,5 +1,12 @@
-// Enumerate all the pseudoinstruction types
-enum Directive {
+enum TokenType {
+  instruction,
+  symbol,
+  register,
+  decNumber,
+  binNumber,
+  hexNumber,
+  label,
+  compundDirective,
   model,
   codeSegment,
   dataSegment,
@@ -13,19 +20,6 @@ enum Directive {
   defineByte,
   defineWord,
   end,
-}
-
-// Enumerate all token types
-enum TokenType {
-  instruction,
-  symbol,
-  register,
-  decNumber,
-  binNumber,
-  hexNumber,
-  label,
-  directive,
-  compundDirective,
   unknown,
 }
 
@@ -45,10 +39,34 @@ extension TokenTypeExtension on TokenType {
         return 'Número hexadecimal';
       case TokenType.label:
         return 'Etiqueta';
-      case TokenType.directive:
-        return 'Directiva';
       case TokenType.compundDirective:
         return 'Pseudoinstrucción';
+      case TokenType.model:
+        return 'Modelo';
+      case TokenType.codeSegment:
+        return 'Segmento de código';
+      case TokenType.dataSegment:
+        return 'Segmento de datos';
+      case TokenType.stackSegment:
+        return 'Segmento de datos';
+      case TokenType.bytePtr:
+        return 'Puntero de byte';
+      case TokenType.wordPtr:
+        return 'Puntero de palabra';
+      case TokenType.dup:
+        return 'Dup';
+      case TokenType.bracket:
+        return 'Corchetes';
+      case TokenType.doubleQuotes:
+        return 'Cadena (comilla dobles)';
+      case TokenType.singleQuotes:
+        return 'Cadena (comillas simples)';
+      case TokenType.defineByte:
+        return 'Definición byte';
+      case TokenType.defineWord:
+        return 'Definición palabra';
+      case TokenType.end:
+        return 'Final';
       case TokenType.unknown:
         return 'Desconocido';
       default:
@@ -58,20 +76,20 @@ extension TokenTypeExtension on TokenType {
 }
 
 // Map each pseudoinstruction type with its Regular Expresion
-final Map<Directive, RegExp> directiveRegExp = {
-  Directive.model: RegExp(r'\.model small\b'),
-  Directive.codeSegment: RegExp(r'\.code segment\b'),
-  Directive.dataSegment: RegExp(r'\.data segment\b'),
-  Directive.stackSegment: RegExp(r'\.stack segment\b'),
-  Directive.bytePtr: RegExp(r'\bbyte ptr\b'),
-  Directive.wordPtr: RegExp(r'\bword ptr\b'),
-  Directive.dup: RegExp(r'dup\([^)]+\)'),
-  Directive.bracket: RegExp(r'\[[^\]]+\]'),
-  Directive.doubleQuotes: RegExp(r'"[^"]*"'),
-  Directive.singleQuotes: RegExp(r"'[^']*'"),
-  Directive.defineByte: RegExp(r'db'),
-  Directive.defineWord: RegExp(r'dw'),
-  Directive.end: RegExp(r'ends\b'),
+final Map<TokenType, RegExp> directiveRegExp = {
+  TokenType.model: RegExp(r'\.model small\b'),
+  TokenType.codeSegment: RegExp(r'\.code segment\b'),
+  TokenType.dataSegment: RegExp(r'\.data segment\b'),
+  TokenType.stackSegment: RegExp(r'\.stack segment\b'),
+  TokenType.bytePtr: RegExp(r'\bbyte ptr\b'),
+  TokenType.wordPtr: RegExp(r'\bword ptr\b'),
+  TokenType.dup: RegExp(r'dup\([^)]+\)'),
+  TokenType.bracket: RegExp(r'\[[^\]]+\]'),
+  TokenType.doubleQuotes: RegExp(r'"[^"]*"'),
+  TokenType.singleQuotes: RegExp(r"'[^']*'"),
+  TokenType.defineByte: RegExp(r'db'),
+  TokenType.defineWord: RegExp(r'dw'),
+  TokenType.end: RegExp(r'ends\b'),
 };
 
 // List all instructions

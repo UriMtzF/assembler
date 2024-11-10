@@ -88,29 +88,38 @@ class Analizer {
 
   void identifyTypes() {
     List<String> types = [];
+
     for (String token in tokens) {
       TokenType type;
-      if (directiveRegExp.values.any((regex) => regex.hasMatch(token))) {
-        type = TokenType.compundDirective;
-      } else if (registers.contains(token)) {
-        type = TokenType.instruction;
-      } else if (symbols.contains(token)) {
-        type = TokenType.symbol;
-      } else if (registers.contains(token)) {
-        type = TokenType.register;
-      } else if (decNumberRegExp.hasMatch(token)) {
-        type = TokenType.decNumber;
-      } else if (binNumberRegExp.hasMatch(token)) {
-        type = TokenType.binNumber;
-      } else if (hexNumberRegExp.hasMatch(token)) {
-        type = TokenType.hexNumber;
-      } else if (labelRegExp.hasMatch(token)) {
-        type = TokenType.label;
-      } else {
-        type = TokenType.unknown;
+
+      type = directiveRegExp.entries
+          .firstWhere(
+            (entry) => entry.value.hasMatch(token),
+            orElse: () => MapEntry(TokenType.unknown, RegExp(r'')),
+          )
+          .key;
+
+      if (type == TokenType.unknown) {
+        if (registers.contains(token)) {
+          type = TokenType.instruction;
+        } else if (symbols.contains(token)) {
+          type = TokenType.symbol;
+        } else if (registers.contains(token)) {
+          type = TokenType.register;
+        } else if (decNumberRegExp.hasMatch(token)) {
+          type = TokenType.decNumber;
+        } else if (binNumberRegExp.hasMatch(token)) {
+          type = TokenType.binNumber;
+        } else if (hexNumberRegExp.hasMatch(token)) {
+          type = TokenType.hexNumber;
+        } else if (labelRegExp.hasMatch(token)) {
+          type = TokenType.label;
+        }
       }
+
       types.add(type.description);
     }
+
     if (types.isNotEmpty) {
       this.types = types;
     }
