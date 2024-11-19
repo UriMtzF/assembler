@@ -19,6 +19,7 @@ enum TokenType {
   singleQuotes,
   defineByte,
   defineWord,
+  equ,
   end,
   unknown,
 }
@@ -67,6 +68,8 @@ extension TokenTypeExtension on TokenType {
         return 'Definición byte';
       case TokenType.defineWord:
         return 'Definición palabra';
+      case TokenType.equ:
+        return 'Definición de constante';
       case TokenType.end:
         return 'Final';
       case TokenType.unknown:
@@ -89,9 +92,10 @@ final Map<TokenType, RegExp> directiveRegExp = {
   TokenType.bracket: RegExp(r'\[[^\]]+\]'),
   TokenType.doubleQuotes: RegExp(r'"[^"]*"'),
   TokenType.singleQuotes: RegExp(r"'[^']*'"),
-  TokenType.defineByte: RegExp(r'db'),
-  TokenType.defineWord: RegExp(r'dw'),
-  TokenType.end: RegExp(r'ends\b'),
+  TokenType.defineByte: RegExp(r'^db\b'),
+  TokenType.defineWord: RegExp(r'^dw\b'),
+  TokenType.equ: RegExp(r'^equ\b'),
+  TokenType.end: RegExp(r'^ends\b'),
 };
 
 // List all instructions

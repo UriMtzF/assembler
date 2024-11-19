@@ -1,12 +1,13 @@
 ; Programa de ejemplo en ensamblador para emu8086
 ; Realiza operaciones de suma y resta básicas y muestra resultados
 
+.modell small
 .stack segment               ; Segmento de stack
     dw 120 dup(0)            ; Reserva 128 palabras en el stack
 ends
 
 .data segment                ; Segmento de datos
-    message de 'Resultado: $'  ; Cadena de mensaje para mostrar el resultado
+    message dw 'Resultado: $'  ; Cadena de mensaje para mostrar el resultado
     num1 db 5                ; Primer número
     num2 db 10               ; Segundo número
     buffer db 20 dup(0)      ; Reserva un buffer de 20 bytes

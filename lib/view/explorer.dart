@@ -119,6 +119,7 @@ class LineAnalysis extends StatelessWidget {
               controller: controller,
               expands: true,
               horizontalScroll: true,
+              readOnly: true,
             ),
           ),
         )

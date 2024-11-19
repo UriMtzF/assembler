@@ -186,9 +186,7 @@ class Analizer {
         List.generate(
           analysis.length,
           (int index) => Result(
-            false,
-            "Los segmentos de pila, datos y código no están orden",
-          ),
+              false, "Los segmentos de pila, datos y código no están orden"),
         ),
       );
       return false;
@@ -244,12 +242,14 @@ class Analizer {
 
     if (endsPos != dupPos + 1) {
       analysis.replaceRange(
-          dupPos,
-          endsPos,
-          List.generate(
-              endsPos - dupPos,
-              (int i) => Result(false,
-                  "Existe más elementos de los necesarios en el segmento de pila")));
+        dupPos,
+        endsPos,
+        List.generate(
+          endsPos - dupPos,
+          (int i) => Result(false,
+              "Existe más elementos de los necesarios en el segmento de pila"),
+        ),
+      );
     }
   }
 
@@ -266,16 +266,66 @@ class Analizer {
     final Set<TokenType> definitionTypes = {
       TokenType.defineByte,
       TokenType.defineWord,
+      TokenType.equ,
+    };
+
+    final Set<TokenType> constantTypes = {
+      TokenType.decNumber,
+      TokenType.binNumber,
+      TokenType.hexNumber,
       TokenType.singleQuotes,
       TokenType.doubleQuotes,
     };
 
+    final Set<TokenType> numberType = {
+      TokenType.decNumber,
+      TokenType.binNumber,
+      TokenType.hexNumber,
+    };
+
     for (int i = dataSegmentPos + 1; i < endsPos; i++) {
       final tokenType = types[i];
-      if (tokenType == TokenType.label) {
-        if (!definitionTypes.contains(types[i + 1])) {
-          analysis[tokenLineIndex[i]] =
-              Result(false, "Una etiqueta debe estar sucedida por un db o dw");
+      if (tokenType == TokenType.label &&
+          !definitionTypes.contains(types[i + 1])) {
+        analysis[tokenLineIndex[i]] = Result(
+            false, "Una etiqueta debe estar sucedida por un db, dw o equ");
+      }
+      if (definitionTypes.contains(tokenType)) {
+        if (types[i - 1] != TokenType.label) {
+          analysis[tokenLineIndex[i]] = Result(
+              false, "Una etiqueta debe existir antes de un db, dw o equ");
+        }
+        if (!constantTypes.contains(types[i + 1])) {
+          analysis[tokenLineIndex[i]] = Result(false,
+              "Un número o cadena debe existir después de la definición");
+        }
+      }
+      if (constantTypes.contains(tokenType)) {
+        if (!definitionTypes.contains(types[i - 1])) {
+          analysis[tokenLineIndex[i]] = Result(
+              false, "Una constante debe estar precedida por una definición");
+        }
+        if (types[i + 2] != TokenType.dup) {
+          // TODO: Add size restriction to constant values
+        }
+      }
+      if (tokenType == TokenType.dup) {
+        if (!numberType.contains(types[i - 1])) {
+          analysis[tokenLineIndex[i]] = Result(
+              false, "Un dup debe estar precedido por una constante numérica");
+          tokens[i - 1].substring(0, 1);
+        }
+        if (numberType.contains(types[i - 1]) &&
+            tokens[i - 1].substring(0, 1) == "-") {
+          analysis[tokenLineIndex[i]] = Result(false,
+              "Un dup debe estar precedido por una constante numérica positiva");
+        }
+        String dupContent = tokens[i].substring(4).replaceFirst(r')', '');
+        if (!(decNumberRegExp.hasMatch(dupContent) ||
+            binNumberRegExp.hasMatch(dupContent) ||
+            hexNumberRegExp.hasMatch(dupContent))) {
+          analysis[tokenLineIndex[i]] = Result(
+              false, "El contenido del dup debe ser una constante numérica");
         }
       }
     }
