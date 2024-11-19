@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:assembler/control/controller.dart';
 import 'package:assembler/model/analizer.dart';
+import 'package:assembler/view/view_type.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
   @override
   Widget build(BuildContext context) {
     final file = ref.watch(fileProvider);
+    final viewType = ref.watch(viewProvider);
     if (file != null) {
       final newLines = _loadFileContent(file);
       if (newLines != codeLines) {
@@ -49,7 +51,8 @@ class _ExplorerState extends ConsumerState<Explorer> {
         codeController.text = codeLines.join('\n');
         analizer.setCode = newLines;
         _tokens = analizer.tokens;
-        _types = analizer.types;
+        _types = analizer.typesString;
+        analizer.checkLines();
         dataSource = DataSource();
       }
     }
@@ -77,26 +80,80 @@ class _ExplorerState extends ConsumerState<Explorer> {
           ),
         ),
         Expanded(
-          child: Column(
-            children: [
-              const Text(
-                "Tokens y tipos",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          child: viewType == ViewType.lineAnalysis
+              ? LineAnalysis(
+                  analysisResult: analizer.analysis,
+                )
+              : TokenTable(dataSource: dataSource),
+        ),
+        // Expanded(
+        //   child: TokenTable(dataSource: dataSource),
+        // ),
+      ],
+    );
+  }
+}
+
+class LineAnalysis extends StatelessWidget {
+  final List<Result> analysisResult;
+  const LineAnalysis({super.key, required this.analysisResult});
+
+  @override
+  Widget build(BuildContext context) {
+    String analysis = analysisResult
+        .map((Result element) => element.message)
+        .toList()
+        .join('\n');
+    CodeController controller = CodeController(text: analysis);
+
+    return Column(
+      children: [
+        const Text(
+          "Análisis línea por línea",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        Expanded(
+          child: CodeTheme(
+            data: const CodeThemeData(styles: atomOneLightTheme),
+            child: CodeField(
+              controller: controller,
+              expands: true,
+              horizontalScroll: true,
+            ),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class TokenTable extends StatelessWidget {
+  const TokenTable({
+    super.key,
+    required this.dataSource,
+  });
+
+  final DataTableSource dataSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Text(
+          "Tokens y tipos",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        Flexible(
+          child: PaginatedDataTable2(
+            columns: const [
+              DataColumn(
+                label: Text("Tokens"),
               ),
-              Flexible(
-                child: PaginatedDataTable2(
-                  columns: const [
-                    DataColumn(
-                      label: Text("Tokens"),
-                    ),
-                    DataColumn(
-                      label: Text("Tipo"),
-                    )
-                  ],
-                  source: dataSource,
-                ),
-              ),
+              DataColumn(
+                label: Text("Tipo"),
+              )
             ],
+            source: dataSource,
           ),
         ),
       ],
