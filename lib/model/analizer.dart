@@ -169,8 +169,9 @@ class Analizer {
   void checkLines() {
     if (checkOrder()) {
       checkStackSegment();
-      checkUnknown();
       checkDataSegment();
+      checkCodeSegment();
+      checkUnknown();
     }
   }
 
@@ -194,7 +195,19 @@ class Analizer {
     return true;
   }
 
-  void checkUnknown() {}
+  void checkUnknown() {
+    if (types.contains(TokenType.unknown)) {
+      List<int> unknowns = [];
+      for (int i = 0; i < types.length; i++) {
+        if (types[i] == TokenType.unknown) {
+          unknowns.add(tokenLineIndex[i]);
+        }
+      }
+      for (int i = 0; i < unknowns.length; i++) {
+        analysis[unknowns[i]] = Result(false, "Instrucción no reconocida");
+      }
+    }
+  }
 
   void checkStackSegment() {
     int stackSegmentPos = types.indexOf(TokenType.stackSegment);
@@ -306,14 +319,32 @@ class Analizer {
               false, "Una constante debe estar precedida por una definición");
         }
         if (types[i + 2] != TokenType.dup) {
-          // TODO: Add size restriction to constant values
+          if (types[i - 1] == TokenType.defineByte) {
+            if (tokenType == TokenType.binNumber && tokens[i].length != 9) {
+              analysis[tokenLineIndex[i]] =
+                  Result(false, "Tamaño incorrecto de constante numérica");
+            }
+            if (tokenType == TokenType.hexNumber && tokens[i].length != 4) {
+              analysis[tokenLineIndex[i]] =
+                  Result(false, "Tamaño incorrecto de constante numérica");
+            }
+          }
+          if (types[i - 1] == TokenType.defineWord) {
+            if (tokenType == TokenType.binNumber && tokens[i].length != 17) {
+              analysis[tokenLineIndex[i]] =
+                  Result(false, "Tamaño incorrecto de constante numérica");
+            }
+            if (tokenType == TokenType.hexNumber && tokens[i].length != 6) {
+              analysis[tokenLineIndex[i]] =
+                  Result(false, "Tamaño incorrecto de constante numérica");
+            }
+          }
         }
       }
       if (tokenType == TokenType.dup) {
         if (!numberType.contains(types[i - 1])) {
           analysis[tokenLineIndex[i]] = Result(
               false, "Un dup debe estar precedido por una constante numérica");
-          tokens[i - 1].substring(0, 1);
         }
         if (numberType.contains(types[i - 1]) &&
             tokens[i - 1].substring(0, 1) == "-") {
@@ -328,6 +359,65 @@ class Analizer {
               false, "El contenido del dup debe ser una constante numérica");
         }
       }
+    }
+  }
+
+  void checkCodeSegment() {
+    int codeSegmentPos = types.indexOf(TokenType.codeSegment);
+    int endsPos = types.last.index;
+    if (types[endsPos] == TokenType.end) {
+      for (int i = codeSegmentPos + 1; i < endsPos; i++) {
+        Result result =
+            Result(false, "La instrucción tiene argumentos inválidos");
+        List<String> labels = [];
+        if (types[i] == TokenType.label) {
+          labels.add(tokens[i]);
+        }
+
+        if (types[i] == TokenType.instruction) {
+          Set<String> noArgsIns = {
+            "cld",
+            "cli",
+            "movsb",
+            "movsw",
+            "xlatb",
+            "aaa"
+          };
+          Set<String> regArgIns = {"pop", "push", "idiv", "dec"};
+          Set<String> regNumArgsIns = {"ror", "sub", "xor", "and"};
+          Set<String> jumpIns = {"jae", "jcxz", "jl", "jnge", "jnp", "jp"};
+          Set<TokenType> numberTypes = {
+            TokenType.decNumber,
+            TokenType.binNumber,
+            TokenType.hexNumber
+          };
+
+          if (noArgsIns.contains(tokens[i])) {
+            analysis[i] = result;
+          }
+          if (regArgIns.contains(tokens[i]) &&
+              types[i + 1] != TokenType.register) {
+            analysis[i] = result;
+          }
+          if (regNumArgsIns.contains(tokens[i]) &&
+              (types[i + 1] != TokenType.register ||
+                  !numberTypes.contains(types[i + 2]))) {
+            analysis[i] = result;
+          }
+          if (jumpIns.contains(tokens[i])) {
+            if (types[i + 1] != TokenType.label) {
+              analysis[i] = result;
+            } else {
+              if (!labels.contains(tokens[i + 1])) {
+                analysis[i] = Result(false, "La etiqueta no está definida");
+              }
+            }
+          }
+        }
+      }
+    } else {
+      analysis[codeSegmentPos] =
+          Result(false, "El segmento de código no tiene un ends");
     }
   }
 }

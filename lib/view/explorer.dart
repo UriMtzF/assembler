@@ -101,7 +101,8 @@ class LineAnalysis extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String analysis = analysisResult
-        .map((Result element) => element.message)
+        .map((Result element) =>
+            element.isValid ? element.message : 'Error: ${element.message}')
         .toList()
         .join('\n');
     CodeController controller = CodeController(text: analysis);
