@@ -10,6 +10,19 @@ class Result {
   );
 }
 
+class Symbol {
+  final String name;
+  final TokenType type;
+  final String value;
+  final String size;
+  Symbol(
+    this.name,
+    this.type,
+    this.value,
+    this.size,
+  );
+}
+
 class Analizer {
   List<String> code;
   List<String> tokens;
@@ -18,6 +31,7 @@ class Analizer {
   List<int> codeLineIndex;
   List<int> tokenLineIndex;
   List<Result> analysis;
+  List<Symbol> symbolsDetail = [];
 
   Analizer({
     this.code = const [""],
@@ -172,6 +186,21 @@ class Analizer {
       checkDataSegment();
       checkCodeSegment();
       checkUnknown();
+      checkLabels();
+    }
+  }
+
+  void checkLabels() {
+    for (int i = types.indexOf(TokenType.dataSegment);
+        i < types.indexOf(TokenType.codeSegment) - 1;
+        i++) {
+      if (analysis[i].isValid && types[i] == TokenType.label) {
+        String name = tokens[i];
+        TokenType type = types[i];
+        String value = tokens[i + 2];
+        String size = types[i + 1] == TokenType.defineByte ? "Byte" : "Palabra";
+        symbolsDetail.add(Symbol(name, type, value, size));
+      }
     }
   }
 
@@ -364,7 +393,7 @@ class Analizer {
 
   void checkCodeSegment() {
     int codeSegmentPos = types.indexOf(TokenType.codeSegment);
-    int endsPos = types.last.index;
+    int endsPos = types.length - 1;
     if (types[endsPos] == TokenType.end) {
       for (int i = codeSegmentPos + 1; i < endsPos; i++) {
         Result result =

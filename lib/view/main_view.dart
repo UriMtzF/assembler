@@ -31,6 +31,12 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           onPressed: () =>
+              ref.read(viewProvider.notifier).setView(ViewType.symbolTable),
+          icon: const Icon(Icons.backup_table),
+          tooltip: "Tabla de símbolos",
+        ),
+        IconButton(
+          onPressed: () =>
               ref.read(viewProvider.notifier).setView(ViewType.tokenTable),
           icon: const Icon(Icons.backup_table),
           tooltip: "Tabla de tokens y tipos",

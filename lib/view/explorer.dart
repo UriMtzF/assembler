@@ -15,6 +15,7 @@ import 'package:flutter_highlight/themes/atom-one-light.dart';
 
 List<String> _tokens = [];
 List<String> _types = [];
+List<Symbol> _symbols = [];
 
 class Explorer extends ConsumerStatefulWidget {
   const Explorer({super.key});
@@ -29,7 +30,8 @@ class _ExplorerState extends ConsumerState<Explorer> {
 
   CodeController codeController = CodeController(language: x86Asm);
 
-  DataTableSource dataSource = DataSource();
+  DataTableSource tokenDataSource = TokenDataSource();
+  DataTableSource symbolDataSource = SymbolDataSource();
 
   @override
   void initState() {
@@ -53,7 +55,8 @@ class _ExplorerState extends ConsumerState<Explorer> {
         _tokens = analizer.tokens;
         _types = analizer.typesString;
         analizer.checkLines();
-        dataSource = DataSource();
+        _symbols = analizer.symbolsDetail;
+        tokenDataSource = TokenDataSource();
       }
     }
 
@@ -84,7 +87,9 @@ class _ExplorerState extends ConsumerState<Explorer> {
               ? LineAnalysis(
                   analysisResult: analizer.analysis,
                 )
-              : TokenTable(dataSource: dataSource),
+              : viewType == ViewType.symbolTable
+                  ? SymbolTable(dataSource: symbolDataSource)
+                  : TokenTable(dataSource: tokenDataSource),
         ),
         // Expanded(
         //   child: TokenTable(dataSource: dataSource),
@@ -129,6 +134,46 @@ class LineAnalysis extends StatelessWidget {
   }
 }
 
+class SymbolTable extends StatelessWidget {
+  const SymbolTable({
+    super.key,
+    required this.dataSource,
+  });
+
+  final DataTableSource dataSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Text(
+          "Tabla de símbolos",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        Flexible(
+          child: PaginatedDataTable2(
+            columns: const [
+              DataColumn(
+                label: Text("Símbolo"),
+              ),
+              DataColumn(
+                label: Text("Tipo"),
+              ),
+              DataColumn(
+                label: Text("Valor"),
+              ),
+              DataColumn(
+                label: Text("Tamaño"),
+              ),
+            ],
+            source: dataSource,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class TokenTable extends StatelessWidget {
   const TokenTable({
     super.key,
@@ -163,7 +208,7 @@ class TokenTable extends StatelessWidget {
   }
 }
 
-class DataSource extends DataTableSource {
+class TokenDataSource extends DataTableSource {
   @override
   int get rowCount => _tokens.length;
 
@@ -179,6 +224,40 @@ class DataSource extends DataTableSource {
         ),
         DataCell(
           Text(_types[index]),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+class SymbolDataSource extends DataTableSource {
+  @override
+  int get rowCount => (_symbols.length / 2).ceil();
+
+  @override
+  DataRow? getRow(int index) {
+    if (_symbols.isEmpty) {
+      return null;
+    }
+    return DataRow(
+      cells: [
+        DataCell(
+          Text(_symbols[index].name),
+        ),
+        DataCell(
+          Text(_symbols[index].type.name),
+        ),
+        DataCell(
+          Text(_symbols[index].value),
+        ),
+        DataCell(
+          Text(_symbols[index].size),
         ),
       ],
     );

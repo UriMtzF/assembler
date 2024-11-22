@@ -1,7 +1,7 @@
 ; Programa de ejemplo en ensamblador para emu8086
 ; Realiza operaciones de suma y resta básicas y muestra resultados
 
-.modell small
+.model small
 .stack segment               ; Segmento de stack
     dw 120 dup(0)            ; Reserva 128 palabras en el stack
 ends
