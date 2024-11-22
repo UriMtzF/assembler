@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:assembler/control/controller.dart';
 import 'package:assembler/view/explorer.dart';
+import 'package:assembler/view/view_type.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,23 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
       title: const Text("Ensamblador"),
       actions: [
         IconButton(
+          onPressed: () =>
+              ref.read(viewProvider.notifier).setView(ViewType.symbolTable),
+          icon: const Icon(Icons.backup_table),
+          tooltip: "Tabla de símbolos",
+        ),
+        IconButton(
+          onPressed: () =>
+              ref.read(viewProvider.notifier).setView(ViewType.tokenTable),
+          icon: const Icon(Icons.backup_table),
+          tooltip: "Tabla de tokens y tipos",
+        ),
+        IconButton(
+            onPressed: () =>
+                ref.read(viewProvider.notifier).setView(ViewType.lineAnalysis),
+            icon: const Icon(Icons.code),
+            tooltip: "Análisis línea por línea"),
+        IconButton(
           onPressed: () async {
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: false,
@@ -55,6 +73,7 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
             }
           },
           icon: const Icon(Icons.file_open),
+          tooltip: "Abrir archivo",
         ),
       ],
     );
