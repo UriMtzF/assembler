@@ -247,3 +247,4 @@ final RegExp binNumberRegExp = RegExp(r'^-?[01]+b\b$');
 final RegExp hexNumberRegExp = RegExp(r'^-?(0x|0)[a-f0-9]+h\b');
 // Regular Expresion for valid labels
 final RegExp labelRegExp = RegExp(r'\b[a-zA-Z_][a-zA-Z0-9_]*(:?)');
+final RegExp dataSegRegExp = RegExp(r'@data$');
