@@ -1,0 +1,162 @@
+.stack segment
+.stacks segment
+ dw   128  dup(0)
+ dw   128  dupy(0)
+ 120 db dup('a')
+ db 100 dup('a')
+ends
+data segment
+datasegment
+.data segment
+;Variables
+ pkey db "press any key...$"
+    var1 db 'hola'
+	pkey db "presiona key...$ una vez
+	frase db faltan comillas
+    var2 dw 0
+tecla db 0
+Vtecla BD 0
+7tecla Wd 0
+tecla db 0
+simbolo db 045H
+simbolo db 45H
+simbolo db 45
+ss1 db 000011111b
+ss2 db 10101010b
+ss3 dw 00000000b
+ss3 dw 1111000011110000b
+
+ends
+
+.code segment
+code
+mov ah, 1 ;Leer un caracter de la entrada estandar
+int 021h ;Llamada al sistema operativo (DOS)
+mov tecla, al
+mov ah, 2 ;imprime un simbolo a la consola
+mov dl, simbolo ;el caracter a mostrar, en este caso la E
+int 21h ;Llamada al DOS
+
+inc tecla
+mov ah, 7 ;NO imprime un simbolo a la consola
+mov dl, tecla ;
+int 021h ;Llamada al DOS
+ret
+;ah = 1 guarda caracter en al
+;ah = 2 escribe un caracter en la consola. El ascii del cacacter a imprimir se pone el dl
+;AH = 7 es igual a el ah=2 pero el resultado no se ve en pantalla
+;ah = 9 imprime una cadena en la consola. Considera el caracter $ como fin de cadena.
+;La direccion de la cadena se expresa en
+mov msg[2], 034H
+mov dx, offset msg
+mov ah, 9
+int 21h
+ret
+msg db "hello world $"
+lectura:
+ mov ah,7
+ int 021h
+ mov tecla, al
+ cmp al,13
+ jz fin:
+cmp tecla, 122d ;si tecla es mayor a 122 entonces ir a fin3 (tecla > 122)
+ja fin3
+cmp tecla,00001111b ;si tecla no es mayor a 96 ir a fin3 (tecla <= 96)
+jng fin3
+sub tecla, 32 ;si es 'a' hasta 'z' entonces restarle 32
+fin3:
+mov ah,2
+add ax, var1
+mov dl,tecla
+int 021h
+jmp lectura
+jmp nex
+
+fin:
+  ; CLD - Clear Direction Flag
+    cld                    ; Correct: CLD se usa sin operandos
+    cld ax                 ; Incorrecto: CLD no toma operandos
+
+    ; CLI - Clear Interrupt Flag
+    cli                    ; Correct: CLI se usa sin operandos
+    cli 0x10               ; Incorrecto: CLI no toma operandos
+
+    ; MOVSB - Move Byte from String to String
+    movsb                  ; Correct: MOVSB se usa sin operandos para copiar bytes
+    movsb ax, bx           ; Incorrecto: MOVSB no toma operandos explícitos
+
+    ; MOVSW - Move Word from String to String
+    movsw                  ; Correct: MOVSW se usa sin operandos para copiar palabras
+    movsw bx, ax           ; Incorrecto: MOVSW no toma operandos explícitos
+
+    ; XLATB - Table Lookup Translation
+    xlatb                  ; Correct: XLATB se usa sin operandos
+    xlatb bx               ; Incorrecto: XLATB no toma operandos
+
+    ; AAA - ASCII Adjust After Addition
+    aaa                    ; Correct: AAA se usa sin operandos
+    aaa ax, bx             ; Incorrecto: AAA no toma operandos
+
+    ; POP - Pop a value from the stack
+    pop ax                 ; Correct: POP necesita un registro como operando
+    pop bx, cx             ; Incorrecto: POP solo toma un operando
+
+    ; IDIV - Signed Integer Division
+    mov ax, 10             ; Preparando para dividir
+    mov bx, 2
+    idiv bx                ; Correct: IDIV usa un único operando (divisor)
+    idiv ax, bx            ; Incorrecto: IDIV solo toma un operando
+
+    ; PUSH - Push a value onto the stack
+    push ax                ; Correct: PUSH toma un solo operando
+    push bx, cx            ; Incorrecto: PUSH solo toma un operando
+
+    ; DEC - Decrement by 1
+    dec ax                 ; Correct: DEC toma un operando que puede ser un registro
+    dec                    ; Incorrecto: DEC requiere un operando
+
+    ; ROR - Rotate Right
+    ror ax, 1              ; Correct: ROR usa dos operandos: destino y número de bits
+    ror ax                 ; Incorrecto: Falta el segundo operando en ROR
+
+    ; SUB - Subtract
+    sub ax, bx             ; Correct: SUB necesita dos operandos: destino y valor a restar
+    sub ax                 ; Incorrecto: Falta el segundo operando en SUB
+
+    ; XOR - Logical Exclusive OR
+    xor ax, ax             ; Correct: XOR toma dos operandos
+    xor ax                 ; Incorrecto: Falta el segundo operando en XOR
+
+    ; AND - Logical AND
+    and ax, bx             ; Correct: AND toma dos operandos
+    and ax                 ; Incorrecto: Falta el segundo operando en AND
+
+    ; JAE - Jump if Above or Equal
+    jae label              ; Correct: JAE toma una etiqueta como operando
+    jae                    ; Incorrecto: Falta el operando en JAE
+
+    ; JCXZ - Jump if CX is Zero
+    jcxz label             ; Correct: JCXZ toma una etiqueta como operando
+    jcxz                   ; Incorrecto: Falta el operando en JCXZ
+
+    ; JL - Jump if Less
+    jl label               ; Correct: JL toma una etiqueta como operando
+    jl                     ; Incorrecto: Falta el operando en JL
+
+    ; JNGE - Jump if Not Greater or Equal
+    jnge label             ; Correct: JNGE toma una etiqueta como operando
+    jnge                   ; Incorrecto: Falta el operando en JNGE
+
+    ; JNP - Jump if Not Parity
+    jnp label              ; Correct: JNP toma una etiqueta como operando
+    jnp                    ; Incorrecto: Falta el operando en JNP
+
+    ; JP - Jump if Parity
+    jp label               ; Correct: JP toma una etiqueta como operando
+    jp                     ; Incorrecto: Falta el operando en JP
+
+label:
+    ; Fin del programa
+    mov eax, 1             ; syscall: salida
+    int 0x80               ; llamada al sistema
+ends
