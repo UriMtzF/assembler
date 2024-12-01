@@ -30,21 +30,6 @@ class MainBar extends ConsumerWidget implements PreferredSizeWidget {
       title: const Text("Ensamblador"),
       actions: [
         IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.table_rows_rounded),
-          tooltip: "Tabla de símbolos",
-        ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.table_chart),
-          tooltip: "Tabla de tokens y tipos",
-        ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.table_rows_outlined),
-          tooltip: "Análisis línea por línea",
-        ),
-        IconButton(
           onPressed: () => _pickFile(context, ref),
           icon: const Icon(Icons.file_open),
           tooltip: "Abrir archivo",
@@ -80,7 +65,7 @@ void _pickFile(BuildContext context, WidgetRef ref) async {
   if (file.path.endsWith('.ens')) {
     ref
         .read(fileStateProvider.notifier)
-        .setFile(File(result.files.single.path!));
+        .setContent(File(result.files.single.path!).readAsLinesSync());
   } else {
     if (context.mounted) {
       _showError(context);

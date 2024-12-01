@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'control.g.dart';
@@ -7,11 +5,11 @@ part 'control.g.dart';
 @riverpod
 class FileState extends _$FileState {
   @override
-  File? build() {
-    return null;
+  List<String> build() {
+    return [];
   }
 
-  void setFile(File? file) {
-    state = file;
+  void setContent(List<String> content) {
+    state = content;
   }
 }
