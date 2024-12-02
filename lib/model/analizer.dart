@@ -138,6 +138,7 @@ class Analizer {
   }
 
   void analizeCode() {
+    // Find segments
     Token stackSegment = tokens.firstWhere(
         (token) => token.type == TokenType.stackSegment,
         orElse: () => Token("", TokenType.unknown, -1));
@@ -147,12 +148,13 @@ class Analizer {
     Token codeSegment = tokens.firstWhere(
         (token) => token.type == TokenType.codeSegment,
         orElse: () => Token("", TokenType.unknown, -1));
-    if (stackSegment.line == -1 ||
-        dataSegment.line == -1 ||
-        codeSegment.line == -1) {
-      for (int i = 0; i < code.length; i++) {
-        analysis.add(
-            Result(i, false, "Algún segmento no está presente en el código"));
+
+    List<Token> ends =
+        tokens.where((token) => token.type == TokenType.ends).toList();
+
+    for (Token token in ends) {
+      if (stackSegment.line != -1) {
+        if (stackSegment.line < token.line) {}
       }
     }
   }
