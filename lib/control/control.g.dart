@@ -6,20 +6,20 @@ part of 'control.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fileStateHash() => r'8347bd3b5469ccccf74f7894e28cded64e94055b';
+String _$codeStateHash() => r'635ffb3daf9013ab39ebc86df896ec68b727460c';
 
-/// See also [FileState].
-@ProviderFor(FileState)
-final fileStateProvider =
-    AutoDisposeNotifierProvider<FileState, List<String>>.internal(
-  FileState.new,
-  name: r'fileStateProvider',
+/// See also [CodeState].
+@ProviderFor(CodeState)
+final codeStateProvider =
+    AutoDisposeNotifierProvider<CodeState, List<String>>.internal(
+  CodeState.new,
+  name: r'codeStateProvider',
   debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$fileStateHash,
+      const bool.fromEnvironment('dart.vm.product') ? null : _$codeStateHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$FileState = AutoDisposeNotifier<List<String>>;
+typedef _$CodeState = AutoDisposeNotifier<List<String>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

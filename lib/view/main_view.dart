@@ -64,7 +64,7 @@ void _pickFile(BuildContext context, WidgetRef ref) async {
 
   if (file.path.endsWith('.ens')) {
     ref
-        .read(fileStateProvider.notifier)
+        .read(codeStateProvider.notifier)
         .setContent(File(result.files.single.path!).readAsLinesSync());
   } else {
     if (context.mounted) {

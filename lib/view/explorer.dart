@@ -1,9 +1,16 @@
+import 'package:assembler/control/control.dart';
+import 'package:assembler/model/analizer.dart';
+import 'package:assembler/model/directives.dart';
 import 'package:code_text_field/code_text_field.dart';
+import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ignore: depend_on_referenced_packages
 import 'package:flutter_highlight/themes/atom-one-dark.dart';
+
+List<Token> _tokens = [];
+List<Result> _analysis = [];
 
 class Explorer extends ConsumerStatefulWidget {
   const Explorer({super.key});
@@ -13,6 +20,8 @@ class Explorer extends ConsumerStatefulWidget {
 }
 
 class _ExplorerState extends ConsumerState<Explorer> {
+  Analizer analizer = Analizer();
+
   CodeController codeController = CodeController();
 
   DataTableSource tokenDataSource = TokenDataSource();
@@ -21,6 +30,20 @@ class _ExplorerState extends ConsumerState<Explorer> {
 
   @override
   Widget build(BuildContext context) {
+    List<String> newCode = ref.watch(codeStateProvider);
+    codeController.text = newCode.join('\n');
+    if (newCode != analizer.code) {
+      analizer = Analizer();
+
+      analizer.code = newCode;
+      analizer.clearCode();
+      analizer.tokenize();
+      analizer.identifyTypes();
+      _tokens = analizer.tokens;
+      _analysis = analizer.analysis;
+      tokenDataSource = TokenDataSource();
+    }
+
     return Row(
       children: [
         Expanded(
@@ -55,12 +78,12 @@ class _ExplorerState extends ConsumerState<Explorer> {
                 const TabBar(
                   tabs: [
                     Tab(
-                      icon: Icon(Icons.table_rows_rounded),
-                      text: "Tabla de símbolos",
-                    ),
-                    Tab(
                       icon: Icon(Icons.table_chart),
                       text: "Tabla de tokens",
+                    ),
+                    Tab(
+                      icon: Icon(Icons.table_rows_rounded),
+                      text: "Tabla de símbolos",
                     ),
                     Tab(
                       icon: Icon(Icons.table_rows_outlined),
@@ -71,8 +94,8 @@ class _ExplorerState extends ConsumerState<Explorer> {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      SymbolTable(dataSource: symbolDataSource),
                       TokenTable(dataSource: tokenDataSource),
+                      SymbolTable(dataSource: symbolDataSource),
                       AnalysisTable(dataSource: analysisDataSource),
                     ],
                   ),
@@ -104,7 +127,18 @@ class TokenTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(
+          label: Text("Tokens"),
+        ),
+        DataColumn(
+          label: Text("Tipo"),
+        ),
+      ],
+      source: dataSource,
+      rowsPerPage: 9,
+    );
   }
 }
 
@@ -115,28 +149,38 @@ class AnalysisTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(label: Text("Línea")),
+        DataColumn(label: Text("Resultado")),
+      ],
+      source: dataSource,
+      rowsPerPage: 9,
+    );
   }
 }
 
 class TokenDataSource extends DataTableSource {
   @override
-  // TODO implement get rowCount
-  int get rowCount => throw UnimplementedError();
+  int get rowCount => _tokens.length;
 
   @override
   DataRow? getRow(int index) {
-    // TODO: implement getRow
-    throw UnimplementedError();
+    return DataRow(cells: [
+      DataCell(
+        Text(_tokens[index].value),
+      ),
+      DataCell(
+        Text(_tokens[index].type.description),
+      ),
+    ]);
   }
 
   @override
-  // TODO: implement isRowCountApproximate
-  bool get isRowCountApproximate => throw UnimplementedError();
+  bool get isRowCountApproximate => false;
 
   @override
-  // TODO: implement selectedRowCount
-  int get selectedRowCount => throw UnimplementedError();
+  int get selectedRowCount => 0;
 }
 
 class SymbolDataSource extends DataTableSource {
@@ -151,30 +195,31 @@ class SymbolDataSource extends DataTableSource {
   }
 
   @override
-  // TODO: implement isRowCountApproximate
-  bool get isRowCountApproximate => throw UnimplementedError();
+  bool get isRowCountApproximate => false;
 
   @override
-  // TODO: implement selectedRowCount
-  int get selectedRowCount => throw UnimplementedError();
+  int get selectedRowCount => 0;
 }
 
 class AnalysisDataSource extends DataTableSource {
   @override
-  // TODO implement get rowCount
-  int get rowCount => throw UnimplementedError();
+  int get rowCount => _analysis.length;
 
   @override
   DataRow? getRow(int index) {
-    // TODO: implement getRow
-    throw UnimplementedError();
+    return DataRow(cells: [
+      DataCell(
+        Text(index.toString()),
+      ),
+      DataCell(
+        Text(_analysis[index].message),
+      ),
+    ]);
   }
 
   @override
-  // TODO: implement isRowCountApproximate
-  bool get isRowCountApproximate => throw UnimplementedError();
+  bool get isRowCountApproximate => false;
 
   @override
-  // TODO: implement selectedRowCount
-  int get selectedRowCount => throw UnimplementedError();
+  int get selectedRowCount => 0;
 }

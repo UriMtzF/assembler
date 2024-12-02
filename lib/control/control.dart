@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'control.g.dart';
 
 @riverpod
-class FileState extends _$FileState {
+class CodeState extends _$CodeState {
   @override
   List<String> build() {
     return [];

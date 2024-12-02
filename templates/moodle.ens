@@ -3,7 +3,7 @@
  dw   128  dup(0)
  dw   128  dupy(0)
  120 db dup('a')
- db 100 dup('a')
+ db 100 dup('b')
 ends
 data segment
 datasegment
