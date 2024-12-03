@@ -9,10 +9,9 @@ class Token {
 }
 
 class Result {
-  final int line;
   final bool isValid;
   final String message;
-  Result(this.line, this.isValid, this.message);
+  Result(this.isValid, this.message);
 }
 
 class Symbol {
@@ -138,24 +137,110 @@ class Analizer {
   }
 
   void analizeCode() {
-    // Find segments
-    Token stackSegment = tokens.firstWhere(
-        (token) => token.type == TokenType.stackSegment,
-        orElse: () => Token("", TokenType.unknown, -1));
-    Token dataSegment = tokens.firstWhere(
-        (token) => token.type == TokenType.dataSegment,
-        orElse: () => Token("", TokenType.unknown, -1));
-    Token codeSegment = tokens.firstWhere(
-        (token) => token.type == TokenType.codeSegment,
-        orElse: () => Token("", TokenType.unknown, -1));
-
-    List<Token> ends =
-        tokens.where((token) => token.type == TokenType.ends).toList();
-
-    for (Token token in ends) {
-      if (stackSegment.line != -1) {
-        if (stackSegment.line < token.line) {}
-      }
+    // Check if the segments are valid, if not set all code as wrong, else continue the analysis
+    analysis = List.generate(code.length, (i) => Result(false, "No analizado"));
+    if (!_verifySegments()) {
+      analysis = List.generate(
+        code.length,
+        (i) => Result(
+            false, "Alguno de los segmentos no existe o no tiene un cierre"),
+      );
+      return;
     }
+    _checkStackSegment();
+    _checkDataSegment();
+    _checkCodeSegment();
+  }
+
+  void _checkStackSegment() {
+    int stackSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.stackSegment);
+    int stackEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, stackSegmentIndex);
+
+    analysis[tokens[stackSegmentIndex].line] = Result(true, "Válido");
+    analysis[tokens[stackEndsIndex].line] = Result(true, "Válido");
+
+    for (int i = stackSegmentIndex + 1; i < stackEndsIndex; i++) {
+      Token currentToken = tokens[i];
+
+      // Verify if the token is a dw
+      if (currentToken.type == TokenType.defineWord) {
+        // Verify if the following tokens are a number and a dup
+        if (i + 1 < stackEndsIndex &&
+            numberTokens.contains(tokens[i + 1].type)) {
+          if (i + 2 < stackEndsIndex && tokens[i + 2].type == TokenType.dup) {
+            bool isValidNumber = _isValidUnsignedNumber(tokens[i + 1].value);
+            bool isValidDupContent = _isValidNumber(
+                tokens[i + 2].value.substring(4).replaceAll(')', ""));
+
+            if (isValidNumber && isValidDupContent) {
+              analysis[currentToken.line] = Result(true, "Válido");
+              i += 2;
+              continue;
+            }
+          }
+          analysis[currentToken.line] =
+              Result(false, "Definición de pila inválido");
+          continue;
+        }
+        // If the following tokens after dw are invalid, set the line as wrong
+        analysis[currentToken.line] =
+            Result(false, "Formato de definición de pila inválido");
+        continue;
+      }
+
+      //If the token does not contains a valid start, set the line as wrong
+      analysis[currentToken.line] =
+          Result(false, "Contenido inválido para segmento de pila");
+      continue;
+    }
+  }
+
+  bool _isValidNumber(String token) {
+    return binNumberRegExp.hasMatch(token) ||
+        octNumberRegExp.hasMatch(token) ||
+        decNumberRegExp.hasMatch(token) ||
+        hexNumberRegExp.hasMatch(token);
+  }
+
+  bool _isValidUnsignedNumber(String token) {
+    if (_isValidNumber(token)) {
+      return token.substring(0, 1) != '-';
+    }
+    return false;
+  }
+
+  void _checkDataSegment() {}
+
+  void _checkCodeSegment() {}
+
+  bool _verifySegments() {
+    int stackSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.stackSegment);
+    int stackEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, stackSegmentIndex);
+
+    int dataSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.dataSegment);
+    int dataEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, dataSegmentIndex);
+
+    int codeSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.codeSegment);
+    int codeEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, codeSegmentIndex);
+
+    return stackSegmentIndex != -1 &&
+        stackEndsIndex != -1 &&
+        dataSegmentIndex != -1 &&
+        dataEndsIndex != -1 &&
+        codeSegmentIndex != -1 &&
+        codeEndsIndex != -1 &&
+        stackSegmentIndex < stackEndsIndex &&
+        stackEndsIndex < dataSegmentIndex &&
+        dataSegmentIndex < dataEndsIndex &&
+        dataEndsIndex < codeSegmentIndex &&
+        codeSegmentIndex < codeEndsIndex;
   }
 }

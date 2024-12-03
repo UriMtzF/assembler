@@ -39,6 +39,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
       analizer.clearCode();
       analizer.tokenize();
       analizer.identifyTypes();
+      analizer.analizeCode();
       _tokens = analizer.tokens;
       _analysis = analizer.analysis;
       tokenDataSource = TokenDataSource();
@@ -209,11 +210,9 @@ class AnalysisDataSource extends DataTableSource {
   DataRow? getRow(int index) {
     return DataRow(cells: [
       DataCell(
-        Text(index.toString()),
+        Text((index + 1).toString()),
       ),
-      DataCell(
-        Text(_analysis[index].message),
-      ),
+      DataCell(Text(_analysis[index].message)),
     ]);
   }
 

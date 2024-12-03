@@ -99,6 +99,13 @@ final Map<TokenType, RegExp> directiveRegExp = {
   TokenType.string: RegExp('(["\'])(.*?)(\\1)'),
 };
 
+final Set<TokenType> numberTokens = {
+  TokenType.binNumber,
+  TokenType.octNumber,
+  TokenType.decNumber,
+  TokenType.hexNumber,
+};
+
 final Set<String> symbolsSet = {
   "aad",
   "aam",
