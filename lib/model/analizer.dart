@@ -18,7 +18,7 @@ class Symbol {
   final String name;
   final TokenType type;
   final String value;
-  final String size;
+  final int size;
   Symbol(this.name, this.type, this.value, this.size);
 }
 
@@ -407,7 +407,131 @@ class Analizer {
     }
   }
 
-  void _checkCodeSegment() {}
+  void _checkCodeSegment() {
+    int codeSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.codeSegment);
+    int codeEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, codeSegmentIndex);
+
+    analysis[tokens[codeSegmentIndex].line] = Result(true, "Válido");
+    analysis[tokens[codeEndsIndex].line] = Result(true, "Válido");
+
+    for (int i = codeSegmentIndex + 1; i < codeEndsIndex; i++) {
+      Token currentToken = tokens[i];
+
+      //Jump already asigned instructions
+      if (analysis[currentToken.line].message != "No analizado") {
+        continue;
+      }
+
+      if (!(currentToken.type == TokenType.instruction ||
+          currentToken.type == TokenType.label)) {
+        analysis[currentToken.line] = Result(false, "Inválido");
+      }
+
+      if (currentToken.type == TokenType.label) {
+        if (symbols
+            .where((symbol) => symbol.value == currentToken.value)
+            .isEmpty) {
+          symbols.add(Symbol(
+              currentToken.value, currentToken.type, currentToken.value, 0));
+        }
+      }
+
+      if (currentToken.type == TokenType.instruction) {
+        String tokenValue = currentToken.value;
+        Set<String> noArgsIns = {
+          "cld",
+          "cli",
+          "movsb",
+          "movsw",
+          "xlatb",
+          "aaa"
+        };
+
+        List<Token> lineTokens =
+            tokens.where((token) => token.line == currentToken.line).toList();
+
+        // Instructions with no args
+        if (noArgsIns.contains(tokenValue) && lineTokens.length == 1) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+
+        // Instructions with one arg
+        if (i + 1 >= codeEndsIndex) {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+          continue;
+        }
+
+        TokenType firstArgType = tokens[i + 1].type;
+
+        if ((tokenValue == "idiv" ||
+                tokenValue == "push" ||
+                tokenValue == "dec" ||
+                tokenValue == "pop") &&
+            firstArgType == TokenType.register) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+
+        if ((tokenValue == "jae" ||
+                tokenValue == "jcxz" ||
+                tokenValue == "jl" ||
+                tokenValue == "jnge" ||
+                tokenValue == "jnp" ||
+                tokenValue == "jp") &&
+            firstArgType == TokenType.label &&
+            symbols
+                .where((symbol) => symbol.value == tokens[i + 1].value)
+                .toList()
+                .isNotEmpty) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+
+        // Instructions with two args
+        if (i + 2 >= codeEndsIndex) {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+          continue;
+        }
+
+        TokenType secondArgType = tokens[i + 2].type;
+
+        if (tokenValue == "ror" &&
+            firstArgType == TokenType.register &&
+            numberTokens.contains(secondArgType)) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+
+        if ((tokenValue == "sub" ||
+                tokenValue == "xor" ||
+                tokenValue == "and") &&
+            ((firstArgType == TokenType.register &&
+                    secondArgType == TokenType.register) ||
+                (firstArgType == TokenType.label &&
+                    secondArgType == TokenType.register) ||
+                (firstArgType == TokenType.register &&
+                    secondArgType == TokenType.label) ||
+                (firstArgType == TokenType.register &&
+                    numberTokens.contains(secondArgType)))) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+      }
+    }
+  }
 
   bool _verifySegments() {
     int stackSegmentIndex =
