@@ -16,9 +16,10 @@ class Result {
 
 class Symbol {
   final String name;
-  final TokenType type;
+  final String type;
   final String value;
   final int size;
+  int direction = 0;
   Symbol(this.name, this.type, this.value, this.size);
 }
 
@@ -86,7 +87,7 @@ class Analizer {
       }
 
       List<String> tokens = modifiedLine
-          .split(RegExp(r'[ ,:]'))
+          .split(RegExp(r'[ ,]'))
           .where((token) => token.isNotEmpty)
           .toList();
 
@@ -151,6 +152,7 @@ class Analizer {
     _checkStackSegment();
     _checkDataSegment();
     _checkCodeSegment();
+    _checkLabels();
   }
 
   void _checkOutsideSegments() {
@@ -429,13 +431,18 @@ class Analizer {
         analysis[currentToken.line] = Result(false, "Inválido");
       }
 
-      if (currentToken.type == TokenType.label) {
-        if (symbols
-            .where((symbol) => symbol.value == currentToken.value)
-            .isEmpty) {
-          symbols.add(Symbol(
-              currentToken.value, currentToken.type, currentToken.value, 0));
-        }
+      List<Token> labelTokens = tokens
+          .where((token) =>
+              token.line == currentToken.line &&
+              token.type == TokenType.label &&
+              token.value.substring(token.value.length - 1) == ':')
+          .toList();
+
+      if (labelTokens.length != 1) {
+        analysis[currentToken.line] = Result(false, "Etiqueta invalida");
+      } else {
+        analysis[currentToken.line] = Result(true, "Etiqueta");
+        continue;
       }
 
       if (currentToken.type == TokenType.instruction) {
@@ -486,6 +493,8 @@ class Analizer {
                 tokenValue == "jnp" ||
                 tokenValue == "jp") &&
             firstArgType == TokenType.label &&
+            tokens[i + 1].value.substring(tokens[i + 1].value.length - 1) !=
+                ":" &&
             symbols
                 .where((symbol) => symbol.value == tokens[i + 1].value)
                 .toList()
@@ -531,6 +540,67 @@ class Analizer {
         }
       }
     }
+  }
+
+  void _checkLabels() {
+    int dataSegmentIndex =
+        tokens.indexWhere((token) => token.type == TokenType.dataSegment);
+    int dataEndsIndex = tokens.indexWhere(
+        (token) => token.type == TokenType.ends, dataSegmentIndex);
+    Set<TokenType> definitionTypes = {
+      TokenType.defineByte,
+      TokenType.defineWord,
+      TokenType.equ
+    };
+    List<Token> definitions = tokens
+        .where((token) =>
+            (definitionTypes.contains(token.type)) &&
+            analysis[token.line].message == "Válido" &&
+            tokens.indexOf(token) > dataSegmentIndex + 1 &&
+            tokens.indexOf(token) < dataEndsIndex)
+        .toList();
+
+    for (Token token in definitions) {
+      print(token.value);
+      symbols.add(Symbol(
+          tokens[tokens.indexOf(token) - 1].value,
+          _varType(token.type),
+          tokens[tokens.indexOf(token) + 1].value,
+          _getSize(token.type)));
+    }
+
+    List<Token> validLabels = tokens
+        .where((token) =>
+            token.type == TokenType.label &&
+            analysis[token.line].message == "Etiqueta")
+        .toList();
+
+    for (Token label in validLabels) {
+      symbols.add(Symbol(label.value, "Etiqueta", label.value, 0));
+    }
+  }
+
+  String _varType(TokenType type) {
+    switch (type) {
+      case TokenType.defineByte:
+        return "Byte";
+      case TokenType.defineWord:
+        return "Word";
+      case TokenType.equ:
+        return "Constante";
+      default:
+        return "Variable";
+    }
+  }
+
+  int _getSize(TokenType definition) {
+    int multiplier = 0;
+    if (definition == TokenType.defineByte) {
+      multiplier = 1;
+    } else if (definition == TokenType.defineWord) {
+      multiplier = 2;
+    }
+    return multiplier;
   }
 
   bool _verifySegments() {

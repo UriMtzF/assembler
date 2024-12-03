@@ -11,6 +11,7 @@ import 'package:flutter_highlight/themes/atom-one-dark.dart';
 
 List<Token> _tokens = [];
 List<Result> _analysis = [];
+List<Symbol> _symbols = [];
 
 class Explorer extends ConsumerStatefulWidget {
   const Explorer({super.key});
@@ -42,6 +43,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
       analizer.analizeCode();
       _tokens = analizer.tokens;
       _analysis = analizer.analysis;
+      _symbols = analizer.symbols;
       tokenDataSource = TokenDataSource();
     }
 
@@ -117,7 +119,28 @@ class SymbolTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+//Nombre, tipo, valor, tamaño, dirección
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(
+          label: Text("Nombre"),
+        ),
+        DataColumn(
+          label: Text("Tipo"),
+        ),
+        DataColumn(
+          label: Text("Valor"),
+        ),
+        DataColumn(
+          label: Text("Tamaño"),
+        ),
+        DataColumn(
+          label: Text("Dirección"),
+        ),
+      ],
+      source: dataSource,
+      rowsPerPage: 9,
+    );
   }
 }
 
@@ -186,13 +209,17 @@ class TokenDataSource extends DataTableSource {
 
 class SymbolDataSource extends DataTableSource {
   @override
-  // TODO implement get rowCount
-  int get rowCount => throw UnimplementedError();
+  int get rowCount => _symbols.length;
 
   @override
   DataRow? getRow(int index) {
-    // TODO: implement getRow
-    throw UnimplementedError();
+    return DataRow(cells: [
+      DataCell(Text(_symbols[index].name)),
+      DataCell(Text(_symbols[index].type)),
+      DataCell(Text(_symbols[index].value)),
+      DataCell(Text(_symbols[index].size.toString())),
+      DataCell(Text(_symbols[index].direction.toString())),
+    ]);
   }
 
   @override

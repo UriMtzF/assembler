@@ -58,7 +58,7 @@ lectura:
  int 021h
  mov tecla, al
  cmp al,13
- jz fin:
+ jz fin
 cmp tecla, 122d ;si tecla es mayor a 122 entonces ir a fin3 (tecla > 122)
 ja fin3
 cmp tecla,00001111b ;si tecla no es mayor a 96 ir a fin3 (tecla <= 96)
