@@ -4,6 +4,7 @@
  dw   128  dupy(0)
  120 db dup('a')
  db 100 dup('b')
+ dw   128  dup(0)
 ends
 data segment
 datasegment
@@ -25,11 +26,12 @@ ss1 db 000011111b
 ss2 db 10101010b
 ss3 dw 00000000b
 ss3 dw 1111000011110000b
-
+estaesunateclamuylarga db 0
 ends
 
 .code segment
 code
+ej:
 mov ah, 1 ;Leer un caracter de la entrada estandar
 int 021h ;Llamada al sistema operativo (DOS)
 mov tecla, al
@@ -159,4 +161,5 @@ label:
     ; Fin del programa
     mov eax, 1             ; syscall: salida
     int 0x80               ; llamada al sistema
+jnp ej
 ends
