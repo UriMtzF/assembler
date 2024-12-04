@@ -15,12 +15,13 @@ class Result {
 }
 
 class Symbol {
+  final int line;
   final String name;
   final String type;
   final String value;
   final int size;
   int direction = 0;
-  Symbol(this.name, this.type, this.value, this.size);
+  Symbol(this.name, this.type, this.value, this.size, this.line);
 }
 
 class Analizer {
@@ -139,7 +140,7 @@ class Analizer {
 
   void analizeCode() {
     // Check if the segments are valid, if not set all code as wrong, else continue the analysis
-    analysis = List.generate(code.length, (i) => Result(true, "No analizado"));
+    analysis = List.generate(code.length, (i) => Result(false, "No analizado"));
     if (!_verifySegments()) {
       analysis = List.generate(
         code.length,
@@ -203,11 +204,13 @@ class Analizer {
     analysis[tokens[stackSegmentIndex].line] = Result(true, "Válido");
     analysis[tokens[stackEndsIndex].line] = Result(true, "Válido");
 
+    bool hasValidStackSegment = false;
+
     for (int i = stackSegmentIndex + 1; i < stackEndsIndex; i++) {
       Token currentToken = tokens[i];
 
       // Verify if the token is a dw
-      if (currentToken.type == TokenType.defineWord) {
+      if (!hasValidStackSegment && currentToken.type == TokenType.defineWord) {
         // Verify if the following tokens are a number and a dup
         if (i + 1 < stackEndsIndex &&
             numberTokens.contains(tokens[i + 1].type)) {
@@ -218,6 +221,7 @@ class Analizer {
                 .substring(4, tokens[i + 2].value.length - 1));
 
             if (isValidNumber && isValidDupContent) {
+              hasValidStackSegment = true;
               analysis[currentToken.line] = Result(true, "Válido");
               i += 2;
               continue;
@@ -274,6 +278,17 @@ class Analizer {
       // label dx value || dup(value)
       // If dup is present, value must be positive
       if (currentToken.type == TokenType.label) {
+        if (currentToken.value.endsWith(":")) {
+          analysis[currentToken.line] = Result(false, "Etiqueta inválida");
+          continue;
+        }
+
+        if (currentToken.value.length > 10) {
+          analysis[currentToken.line] =
+              Result(false, "Nombre de etiqueta muy grande");
+          continue;
+        }
+
         // If the next token is outside segment
         // the label has no definition and its wrong
         if (i + 1 >= dataEndsIndex) {
@@ -326,6 +341,10 @@ class Analizer {
             // A dup token is found
             if (dupToken.type == TokenType.dup) {
               // The value token must be positive if a dup is present
+              if (valueToken.type != TokenType.decNumber) {
+                analysis[currentToken.line] =
+                    Result(false, "El predecesor de un dup debe ser decimal");
+              }
               if (!_isValidUnsignedNumber(valueToken.value)) {
                 analysis[currentToken.line] =
                     Result(false, "dup debe ser positivo");
@@ -441,7 +460,10 @@ class Analizer {
       if (labelTokens.length != 1) {
         analysis[currentToken.line] = Result(false, "Etiqueta invalida");
       } else {
-        analysis[currentToken.line] = Result(true, "Etiqueta");
+        labelTokens[0].value.length > 11
+            ? analysis[currentToken.line] =
+                Result(false, "Nombre de etiqueta muy grande")
+            : analysis[currentToken.line] = Result(true, "Etiqueta");
         continue;
       }
 
@@ -561,12 +583,182 @@ class Analizer {
         .toList();
 
     for (Token token in definitions) {
-      print(token.value);
-      symbols.add(Symbol(
-          tokens[tokens.indexOf(token) - 1].value,
-          _varType(token.type),
-          tokens[tokens.indexOf(token) + 1].value,
-          _getSize(token.type)));
+      int tokenIndex = tokens.indexOf(token);
+      Token name = tokens[tokenIndex - 1];
+      Token value = tokens[tokenIndex + 1];
+      Token? dup = tokens[tokenIndex + 2].type == TokenType.dup
+          ? tokens[tokenIndex + 2]
+          : null;
+
+      if (symbols.any((symbol) => symbol.name == name.value)) {
+        analysis[token.line] =
+            Result(false, "Existe una variable con ese nombre");
+        continue;
+      }
+
+      if (value.type == TokenType.string) {
+        int size = _getSize(token.type,
+            value.value.substring(1, value.value.length - 1).length);
+        symbols.add(Symbol(tokens[tokenIndex - 1].value, _varType(name.type),
+            value.value, size, token.line));
+        continue;
+      }
+
+      if (dup != null) {
+        try {
+          int multiplier = 1;
+          String dupSize = value.value.endsWith('d')
+              ? value.value.substring(0, value.value.length - 1)
+              : value.value;
+          multiplier = int.parse(dupSize);
+          int size = _getSize(token.type, multiplier);
+          symbols.add(Symbol(name.value, _varType(token.type),
+              dup.value.substring(1, dup.value.length - 1), size, token.line));
+          continue;
+        } catch (e) {
+          analysis[token.line] = Result(false, "Definicion de dup inválida");
+          continue;
+        }
+      }
+      Result wrongSizeRes = Result(false, "Tamaño de valor inválido");
+
+      if (token.type == TokenType.defineByte) {
+        switch (value.type) {
+          case TokenType.binNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.substring(0, value.value.length - 1),
+                  radix: 2);
+              valueInt > 255
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 1, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+          case TokenType.octNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.substring(0, value.value.length - 1),
+                  radix: 8);
+              valueInt > 255
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 1, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          case TokenType.decNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.endsWith('d')
+                      ? value.value.substring(0, value.value.length - 1)
+                      : value.value,
+                  radix: 10);
+              valueInt > 255
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 1, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          case TokenType.hexNumber:
+            try {
+              String number = "";
+              if (value.value.startsWith('0x')) {
+                number = value.value.substring(2, value.value.length - 1);
+              } else {
+                number = value.value.substring(1, value.value.length - 1);
+              }
+              int valueInt = int.parse(number, radix: 16);
+              valueInt > 255
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 1, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          default:
+            analysis[token.line] == wrongSizeRes;
+        }
+        continue;
+      }
+
+      if (token.type == TokenType.defineWord) {
+        switch (value.type) {
+          case TokenType.binNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.substring(0, value.value.length - 1),
+                  radix: 2);
+              valueInt > 65535
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 2, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+          case TokenType.octNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.substring(0, value.value.length - 1),
+                  radix: 8);
+              valueInt > 65535
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 2, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          case TokenType.decNumber:
+            try {
+              int valueInt = int.parse(
+                  value.value.endsWith('d')
+                      ? value.value.substring(0, value.value.length - 1)
+                      : value.value,
+                  radix: 10);
+              valueInt > 65535
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 2, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          case TokenType.hexNumber:
+            try {
+              String number = "";
+              if (value.value.startsWith('0x')) {
+                number = value.value.substring(2, value.value.length - 1);
+              } else {
+                number = value.value.substring(1, value.value.length - 1);
+              }
+              int valueInt = int.parse(number, radix: 16);
+              valueInt > 65535
+                  ? analysis[token.line] = wrongSizeRes
+                  : symbols.add(Symbol(name.value, _varType(token.type),
+                      value.value, 2, token.line));
+            } catch (e) {
+              analysis[token.line] =
+                  Result(false, "Tamaño inválido de variable");
+            }
+            break;
+          default:
+            analysis[token.line] == wrongSizeRes;
+        }
+        continue;
+      }
     }
 
     List<Token> validLabels = tokens
@@ -576,7 +768,7 @@ class Analizer {
         .toList();
 
     for (Token label in validLabels) {
-      symbols.add(Symbol(label.value, "Etiqueta", label.value, 0));
+      symbols.add(Symbol(label.value, "Etiqueta", "", 1, label.line));
     }
   }
 
@@ -585,7 +777,7 @@ class Analizer {
       case TokenType.defineByte:
         return "Byte";
       case TokenType.defineWord:
-        return "Word";
+        return "Palabra";
       case TokenType.equ:
         return "Constante";
       default:
@@ -593,14 +785,14 @@ class Analizer {
     }
   }
 
-  int _getSize(TokenType definition) {
-    int multiplier = 0;
+  int _getSize(TokenType definition, int multiplier) {
+    int size = 0;
     if (definition == TokenType.defineByte) {
-      multiplier = 1;
+      size = 1 * multiplier;
     } else if (definition == TokenType.defineWord) {
-      multiplier = 2;
+      size = 2 * multiplier;
     }
-    return multiplier;
+    return size;
   }
 
   bool _verifySegments() {

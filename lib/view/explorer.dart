@@ -12,6 +12,7 @@ import 'package:flutter_highlight/themes/atom-one-dark.dart';
 List<Token> _tokens = [];
 List<Result> _analysis = [];
 List<Symbol> _symbols = [];
+Map<int, String> _code = {};
 
 class Explorer extends ConsumerStatefulWidget {
   const Explorer({super.key});
@@ -41,6 +42,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
       analizer.tokenize();
       analizer.identifyTypes();
       analizer.analizeCode();
+      _code = analizer.cleanCode;
       _tokens = analizer.tokens;
       _analysis = analizer.analysis;
       _symbols = analizer.symbols;
@@ -176,6 +178,7 @@ class AnalysisTable extends StatelessWidget {
     return PaginatedDataTable2(
       columns: const [
         DataColumn(label: Text("Línea")),
+        DataColumn(label: Text("Código")),
         DataColumn(label: Text("Resultado")),
       ],
       source: dataSource,
@@ -213,11 +216,17 @@ class SymbolDataSource extends DataTableSource {
 
   @override
   DataRow? getRow(int index) {
+    String value =
+        _symbols[index].type == "Etiqueta" ? "" : _symbols[index].value;
+    String size = _symbols[index].type == "Etiqueta"
+        ? ""
+        : _symbols[index].size.toString();
+
     return DataRow(cells: [
       DataCell(Text(_symbols[index].name)),
       DataCell(Text(_symbols[index].type)),
-      DataCell(Text(_symbols[index].value)),
-      DataCell(Text(_symbols[index].size.toString())),
+      DataCell(Text(value)),
+      DataCell(Text(size)),
       DataCell(Text(_symbols[index].direction.toString())),
     ]);
   }
@@ -239,7 +248,12 @@ class AnalysisDataSource extends DataTableSource {
       DataCell(
         Text((index + 1).toString()),
       ),
-      DataCell(Text(_analysis[index].message)),
+      DataCell(Text(_code[index] ?? "")),
+      DataCell(
+        Text(_analysis[index].isValid
+            ? _analysis[index].message
+            : "FALSE: ${_analysis[index].message}"),
+      ),
     ]);
   }
 
