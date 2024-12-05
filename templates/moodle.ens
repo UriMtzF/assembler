@@ -107,7 +107,7 @@ fin:
     mov ax, 10             ; Preparando para dividir
     mov bx, 2
     idiv bx                ; Correct: IDIV usa un único operando (divisor)
-    idiv ax, bx            ; Incorrecto: IDIV solo toma un operando
+    idiv var4, 021h            ; Incorrecto: IDIV solo toma un operando
 
     ; PUSH - Push a value onto the stack
     push ax                ; Correct: PUSH toma un solo operando

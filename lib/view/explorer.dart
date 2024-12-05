@@ -246,13 +246,13 @@ class AnalysisDataSource extends DataTableSource {
   DataRow? getRow(int index) {
     return DataRow(cells: [
       DataCell(
-        Text("${_analysis[index].direction.toRadixString(16)}h"),
+        Text("${_analysis[index].direction.toRadixString(16)}h".toUpperCase()),
       ),
       DataCell(Text(_code[index] ?? "")),
       DataCell(
         Text(_analysis[index].isValid
-            ? _analysis[index].message
-            : "FALSE: ${_analysis[index].message}"),
+            ? _analysis[index].message.toUpperCase()
+            : "ERROR: ${_analysis[index].message}"),
       ),
     ]);
   }

@@ -1,3 +1,4 @@
+import 'package:assembler/model/data_instructions.dart';
 import 'package:assembler/model/directives.dart';
 
 class Token {
@@ -9,8 +10,8 @@ class Token {
 }
 
 class Result {
-  final bool isValid;
-  final String message;
+  bool isValid;
+  String message;
   int direction = 0x250;
   Result(this.isValid, this.message);
 }
@@ -158,6 +159,7 @@ class Analizer {
     _checkCodeSegment();
     _checkLabels();
     _setDirection();
+    _checkValidLines();
   }
 
   void _checkOutsideSegments() {
@@ -458,7 +460,7 @@ class Analizer {
           .where((token) =>
               token.line == currentToken.line &&
               token.type == TokenType.label &&
-              token.value.substring(token.value.length - 1) == ':')
+              token.value.endsWith(":"))
           .toList();
 
       if (labelTokens.length != 1) {
@@ -481,12 +483,31 @@ class Analizer {
           "xlatb",
           "aaa"
         };
+        Set<String> oneArgIns = {
+          "idiv",
+          "push",
+          "dec",
+          "pop",
+          "jae",
+          "jcxz",
+          "jl",
+          "jnge",
+          "jnp",
+          "jp"
+        };
+        Set<String> twoArgsIns = {"ror", "sub", "xor", "and"};
 
         List<Token> lineTokens =
             tokens.where((token) => token.line == currentToken.line).toList();
 
         // Instructions with no args
         if (noArgsIns.contains(tokenValue) && lineTokens.length == 1) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else if (oneArgIns.contains(tokenValue) && lineTokens.length == 2) {
+          analysis[currentToken.line] = Result(true, "Válido");
+          continue;
+        } else if (twoArgsIns.contains(tokenValue) && lineTokens.length == 3) {
           analysis[currentToken.line] = Result(true, "Válido");
           continue;
         } else {
@@ -765,7 +786,6 @@ class Analizer {
         continue;
       }
     }
-
     List<Token> validLabels = tokens
         .where((token) =>
             token.type == TokenType.label &&
@@ -773,6 +793,7 @@ class Analizer {
         .toList();
 
     for (Token label in validLabels) {
+      analysis[label.line].message = "Válido";
       symbols.add(Symbol(label.value, "Etiqueta", "", 1, label));
     }
   }
@@ -847,6 +868,429 @@ class Analizer {
       } else {
         continue;
       }
+    }
+  }
+
+  void _checkValidLines() {
+    // Iterate through all tokens inside the code segment
+    for (int i =
+            tokens.indexWhere((token) => token.type == TokenType.codeSegment) +
+                1;
+        i < tokens.length;
+        i++) {
+      // Jump any incorrect line or label as these cannot be coded;
+      if (analysis.any((result) =>
+              !result.isValid && analysis.indexOf(result) == tokens[i].line) ||
+          tokens[i].type == TokenType.label) {
+        continue;
+      }
+
+      // Check only instructions
+      // All instructions arguments had been already verified
+      // Here will be checking other types of conditions
+      // and codifying the instructions in hex
+      if (tokens[i].type == TokenType.instruction) {
+        Token token = tokens[i];
+        if (token.value == "cld") {
+          analysis[token.line].message =
+              "${int.parse('1111100', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+        if (token.value == "cli") {
+          analysis[token.line].message =
+              "${int.parse('11111010', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+        if (token.value == "movsb") {
+          analysis[token.line].message =
+              "${int.parse('10100100', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+        if (token.value == "movsw") {
+          analysis[token.line].message =
+              "${int.parse('10100101', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+        if (token.value == "xlatb") {
+          analysis[token.line].message =
+              "${int.parse('11010111', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+        if (token.value == "aaa") {
+          analysis[token.line].message =
+              "${int.parse('00110111', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+
+        Token firstArg = tokens[i + 1];
+        if (token.value == "idiv") {
+          String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+          String mod = modValue[firstArg.value]!;
+          String rm = rmValue[firstArg.value]!;
+          String binCodification = "1111011$w${mod}111$rm";
+          analysis[token.line].message =
+              "${int.parse(binCodification, radix: 2).toRadixString(16)}H";
+          continue;
+        }
+
+        if (token.value == "push") {
+          if (firstArg.type == TokenType.register) {
+            String reg = regValue[firstArg.value]!;
+            String binCodification = "01010$reg";
+            analysis[token.line].message =
+                "${int.parse(binCodification, radix: 2).toRadixString(16)}H";
+            continue;
+          }
+          if (firstArg.type == TokenType.segment) {
+            String reg = segmentValue[firstArg.value]!;
+            String binCodification = "000${reg}110";
+            analysis[token.line].message =
+                "${int.parse(binCodification, radix: 2).toRadixString(16)}H";
+            continue;
+          }
+          if (numberTokens.contains(firstArg.type)) {
+            int inm = _numberFromBase(firstArg);
+            analysis[token.line].message =
+                "${int.parse('01101000${inm.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+            continue;
+          }
+          analysis[token.line].isValid = false;
+          analysis[token.line].message = "Argumentos inválidos";
+          continue;
+        }
+
+        if (token.value == "pop") {
+          if (firstArg.type == TokenType.register) {
+            String reg = regValue[firstArg.value]!;
+            String binCodification = "01010$reg";
+            analysis[token.line].message =
+                "${int.parse(binCodification, radix: 2).toRadixString(16)}H";
+            continue;
+          }
+          if (firstArg.type == TokenType.segment) {
+            String reg = segmentValue[firstArg.value]!;
+            String binCodification = "000${reg}111";
+            analysis[token.line].message =
+                "${int.parse(binCodification, radix: 2).toRadixString(16)}H";
+            continue;
+          }
+          analysis[token.line].isValid = false;
+          analysis[token.line].message = "Argumentos inválidos";
+          continue;
+        }
+
+        if (token.value == "dec") {
+          String reg = regValue[firstArg.value]!;
+          analysis[token.line].message =
+              "${int.parse('01001$reg', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+
+        Set<String> jumpInstructions = {
+          "jae",
+          "jcxz",
+          "jl",
+          "jnge",
+          "jnp",
+          "jp"
+        };
+
+        if (jumpInstructions.contains(token.value)) {
+          if (symbols.any((symbol) =>
+              symbol.token.line < firstArg.line &&
+              symbol.token.value.contains(firstArg.value))) {
+            Symbol originalLabel = symbols.firstWhere(
+                (symbol) => symbol.token.value.contains(firstArg.value));
+
+            int jump = analysis[token.line].direction - originalLabel.direction;
+            int jumpSize = _getHexSize(jump);
+
+            if (token.value == "jae") {
+              if (jumpSize == 0) {
+                analysis[token.line].message =
+                    "${int.parse('0111011${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else if (jumpSize == 1) {
+                analysis[token.line].message =
+                    "${int.parse('0000111110000010${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else {
+                analysis[token.line].isValid = false;
+                analysis[token.line].message = "Tamaño de salto inválido";
+                continue;
+              }
+            }
+
+            if (token.value == "jcxz") {
+              if (jumpSize == 0) {
+                analysis[token.line].message =
+                    "${int.parse('11100011${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else {
+                analysis[token.line].isValid = false;
+                analysis[token.line].message = "Tamaño de salto inválido";
+                continue;
+              }
+            }
+
+            if (token.value == "jl" || token.value == "jnge") {
+              if (jumpSize == 0) {
+                analysis[token.line].message =
+                    "${int.parse('01111100${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else if (jumpSize == 1) {
+                analysis[token.line].message =
+                    "${int.parse('0000111110001100${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else {
+                analysis[token.line].isValid = false;
+                analysis[token.line].message = "Tamaño de salto inválido";
+                continue;
+              }
+            }
+
+            if (token.value == "jnp") {
+              if (jumpSize == 0) {
+                analysis[token.line].message =
+                    "${int.parse('01111011${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else if (jumpSize == 1) {
+                analysis[token.line].message =
+                    "${int.parse('0000111110001011${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else {
+                analysis[token.line].isValid = false;
+                analysis[token.line].message = "Tamaño de salto inválido";
+                continue;
+              }
+            }
+
+            if (token.value == "jp") {
+              if (jumpSize == 0) {
+                analysis[token.line].message =
+                    "${int.parse('01111010${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else if (jumpSize == 1) {
+                analysis[token.line].message =
+                    "${int.parse('0000111110001010${jump.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              } else {
+                analysis[token.line].isValid = false;
+                analysis[token.line].message = "Tamaño de salto inválido";
+                continue;
+              }
+            }
+          }
+          analysis[token.line].isValid = false;
+          analysis[token.line].message = "La etiqueta no está definida";
+        }
+
+        Token secondArg = tokens[i + 2];
+        if (token.value == 'ror') {
+          String code = _numberFromBase(firstArg) == 1 ? "1101000" : "1100000";
+          String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+          String mod = modValue[firstArg.value]!;
+          String rm = rmValue[firstArg.value]!;
+          analysis[token.line].message =
+              "${int.parse('$code$w${mod}001$rm', radix: 2).toRadixString(16)}H";
+          continue;
+        }
+
+        if (token.value == 'sub') {
+          if (firstArg.type == TokenType.register) {
+            if (acumulators.contains(firstArg.value)) {
+              String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+              int inm = _numberFromBase(secondArg);
+              analysis[token.line].message =
+                  "${int.parse('0010110$w${inm.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+              continue;
+            }
+            if (firstArg.type == TokenType.label) {
+              //TODO: Add all other types of memory destination
+              String mod = "00";
+              String rm = "110";
+              String w = byteRegister.contains(secondArg.value) ? "0" : "1";
+              int desp = 0x500;
+              String reg = regValue[secondArg.value]!;
+              analysis[token.line].message =
+                  "${int.parse('0010100$w$mod$reg$rm${desp.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+              continue;
+            }
+            if (firstArg.type == TokenType.register) {
+              if (secondArg.type == TokenType.register) {
+                if (!(byteRegister.contains(firstArg.value) &&
+                    byteRegister.contains(secondArg.value))) {
+                  analysis[token.line].isValid = false;
+                  analysis[token.line].message =
+                      "Tamaño de argumentos inválido";
+                  continue;
+                }
+                String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                String mod = modValue[firstArg.value]!;
+                String reg = regValue[secondArg.value]!;
+                String rm = rmValue[firstArg.value]!;
+                analysis[token.line].message =
+                    "${int.parse('00101000$w$mod$reg$rm}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+              if (secondArg.type == TokenType.label) {
+                String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                String mod = "00";
+                String reg = regValue[secondArg.value]!;
+                String rm = "110";
+                analysis[token.line].message =
+                    "${int.parse('0010101$w$mod$reg$rm${0x500.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+            }
+          }
+
+          if (token.value == 'xor') {
+            if (firstArg.type == TokenType.register) {
+              if (acumulators.contains(firstArg.value)) {
+                String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                int inm = _numberFromBase(secondArg);
+                analysis[token.line].message =
+                    "${int.parse('0011010$w${inm.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+              if (firstArg.type == TokenType.label) {
+                //TODO: Add all other types of memory destination
+                String mod = "00";
+                String rm = "110";
+                String w = byteRegister.contains(secondArg.value) ? "0" : "1";
+                int desp = 0x500;
+                String reg = regValue[secondArg.value]!;
+                analysis[token.line].message =
+                    "${int.parse('0011000$w$mod$reg$rm${desp.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+              if (firstArg.type == TokenType.register) {
+                if (secondArg.type == TokenType.register) {
+                  if (!(byteRegister.contains(firstArg.value) &&
+                      byteRegister.contains(secondArg.value))) {
+                    analysis[token.line].isValid = false;
+                    analysis[token.line].message =
+                        "Tamaño de argumentos inválido";
+                    continue;
+                  }
+                  String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                  String mod = modValue[firstArg.value]!;
+                  String reg = regValue[secondArg.value]!;
+                  String rm = rmValue[firstArg.value]!;
+                  analysis[token.line].message =
+                      "${int.parse('0011000$w$mod$reg$rm}', radix: 2).toRadixString(16)}H";
+                  continue;
+                }
+                if (secondArg.type == TokenType.label) {
+                  String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                  String mod = "00";
+                  String reg = regValue[secondArg.value]!;
+                  String rm = "110";
+                  analysis[token.line].message =
+                      "${int.parse('0011001$w$mod$reg$rm${0x500.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                  continue;
+                }
+              }
+            }
+          }
+          if (token.value == 'and') {
+            if (firstArg.type == TokenType.register) {
+              if (acumulators.contains(firstArg.value)) {
+                String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                int inm = _numberFromBase(secondArg);
+                analysis[token.line].message =
+                    "${int.parse('0010010$w${inm.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+              if (firstArg.type == TokenType.label) {
+                //TODO: Add all other types of memory destination
+                String mod = "00";
+                String rm = "110";
+                String w = byteRegister.contains(secondArg.value) ? "0" : "1";
+                int desp = 0x500;
+                String reg = regValue[secondArg.value]!;
+                analysis[token.line].message =
+                    "${int.parse('0010000$w$mod$reg$rm${desp.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                continue;
+              }
+              if (firstArg.type == TokenType.register) {
+                if (secondArg.type == TokenType.register) {
+                  if (!(byteRegister.contains(firstArg.value) &&
+                      byteRegister.contains(secondArg.value))) {
+                    analysis[token.line].isValid = false;
+                    analysis[token.line].message =
+                        "Tamaño de argumentos inválido";
+                    continue;
+                  }
+                  String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                  String mod = modValue[firstArg.value]!;
+                  String reg = regValue[secondArg.value]!;
+                  String rm = rmValue[firstArg.value]!;
+                  analysis[token.line].message =
+                      "${int.parse('0010000$w$mod$reg$rm}', radix: 2).toRadixString(16)}H";
+                  continue;
+                }
+                if (secondArg.type == TokenType.label) {
+                  String w = byteRegister.contains(firstArg.value) ? "0" : "1";
+                  String mod = "00";
+                  String reg = regValue[secondArg.value]!;
+                  String rm = "110";
+                  analysis[token.line].message =
+                      "${int.parse('0010001$w$mod$reg$rm${0x500.toRadixString(2)}', radix: 2).toRadixString(16)}H";
+                  continue;
+                }
+              }
+            }
+          }
+        }
+      } else {
+        continue;
+      }
+    }
+  }
+
+  int _numberFromBase(Token token) {
+    int number = 0;
+    switch (token.type) {
+      case TokenType.binNumber:
+        number = int.tryParse(token.value.substring(0, token.value.length - 1),
+                radix: 2) ??
+            0;
+        break;
+      case TokenType.octNumber:
+        number = int.tryParse(token.value.substring(0, token.value.length - 1),
+                radix: 8) ??
+            0;
+
+        break;
+      case TokenType.decNumber:
+        String tokenValue = token.value.endsWith("d")
+            ? token.value.substring(0, token.value.length - 1)
+            : token.value;
+        number = int.tryParse(tokenValue, radix: 10) ?? 0;
+        break;
+      case TokenType.hexNumber:
+        String tokenValue = token.value.endsWith("h")
+            ? token.value.substring(0, token.value.length - 1)
+            : token.value;
+        tokenValue = tokenValue.startsWith("0x")
+            ? tokenValue.substring(2)
+            : tokenValue.substring(1);
+        number = int.tryParse(tokenValue, radix: 16) ?? 0;
+        break;
+      default:
+    }
+    return number < 0 ? 0 : number;
+  }
+
+  int _getHexSize(int number) {
+    if (number >= 0 && number <= 255) {
+      return 0;
+    } else if (number > 65535) {
+      return 3;
+    } else {
+      return 1;
     }
   }
 
