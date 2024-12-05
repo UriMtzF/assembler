@@ -11,17 +11,18 @@ class Token {
 class Result {
   final bool isValid;
   final String message;
+  int direction = 0x250;
   Result(this.isValid, this.message);
 }
 
 class Symbol {
-  final int line;
+  final Token token;
   final String name;
   final String type;
   final String value;
   final int size;
   int direction = 0;
-  Symbol(this.name, this.type, this.value, this.size, this.line);
+  Symbol(this.name, this.type, this.value, this.size, this.token);
 }
 
 class Analizer {
@@ -122,6 +123,8 @@ class Analizer {
           type = TokenType.symbol;
         } else if (registers.contains(token.value)) {
           type = TokenType.register;
+        } else if (segments.contains(token.value)) {
+          TokenType.segment;
         } else if (binNumberRegExp.hasMatch(token.value)) {
           type = TokenType.binNumber;
         } else if (octNumberRegExp.hasMatch(token.value)) {
@@ -154,6 +157,7 @@ class Analizer {
     _checkDataSegment();
     _checkCodeSegment();
     _checkLabels();
+    _setDirection();
   }
 
   void _checkOutsideSegments() {
@@ -497,13 +501,18 @@ class Analizer {
 
         TokenType firstArgType = tokens[i + 1].type;
 
-        if ((tokenValue == "idiv" ||
-                tokenValue == "push" ||
-                tokenValue == "dec" ||
-                tokenValue == "pop") &&
+        if ((tokenValue == "idiv" || tokenValue == "dec") &&
             firstArgType == TokenType.register) {
           analysis[currentToken.line] = Result(true, "Válido");
           continue;
+        } else {
+          analysis[currentToken.line] = Result(false, "Argumentos inválidos");
+        }
+
+        if ((tokenValue == "pop" || tokenValue == "push") &&
+            (firstArgType == TokenType.register ||
+                firstArgType == TokenType.segment)) {
+          analysis[currentToken.line] = Result(true, "Válido");
         } else {
           analysis[currentToken.line] = Result(false, "Argumentos inválidos");
         }
@@ -516,11 +525,7 @@ class Analizer {
                 tokenValue == "jp") &&
             firstArgType == TokenType.label &&
             tokens[i + 1].value.substring(tokens[i + 1].value.length - 1) !=
-                ":" &&
-            symbols
-                .where((symbol) => symbol.value == tokens[i + 1].value)
-                .toList()
-                .isNotEmpty) {
+                ":") {
           analysis[currentToken.line] = Result(true, "Válido");
           continue;
         } else {
@@ -600,7 +605,7 @@ class Analizer {
         int size = _getSize(token.type,
             value.value.substring(1, value.value.length - 1).length);
         symbols.add(Symbol(tokens[tokenIndex - 1].value, _varType(name.type),
-            value.value, size, token.line));
+            value.value, size, token));
         continue;
       }
 
@@ -613,7 +618,7 @@ class Analizer {
           multiplier = int.parse(dupSize);
           int size = _getSize(token.type, multiplier);
           symbols.add(Symbol(name.value, _varType(token.type),
-              dup.value.substring(1, dup.value.length - 1), size, token.line));
+              dup.value.substring(1, dup.value.length - 1), size, token));
           continue;
         } catch (e) {
           analysis[token.line] = Result(false, "Definicion de dup inválida");
@@ -631,8 +636,8 @@ class Analizer {
                   radix: 2);
               valueInt > 255
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 1, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 1, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -644,8 +649,8 @@ class Analizer {
                   radix: 8);
               valueInt > 255
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 1, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 1, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -660,8 +665,8 @@ class Analizer {
                   radix: 10);
               valueInt > 255
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 1, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 1, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -678,8 +683,8 @@ class Analizer {
               int valueInt = int.parse(number, radix: 16);
               valueInt > 255
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 1, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 1, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -700,8 +705,8 @@ class Analizer {
                   radix: 2);
               valueInt > 65535
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 2, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 2, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -713,8 +718,8 @@ class Analizer {
                   radix: 8);
               valueInt > 65535
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 2, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 2, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -729,8 +734,8 @@ class Analizer {
                   radix: 10);
               valueInt > 65535
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 2, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 2, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -747,8 +752,8 @@ class Analizer {
               int valueInt = int.parse(number, radix: 16);
               valueInt > 65535
                   ? analysis[token.line] = wrongSizeRes
-                  : symbols.add(Symbol(name.value, _varType(token.type),
-                      value.value, 2, token.line));
+                  : symbols.add(Symbol(
+                      name.value, _varType(token.type), value.value, 2, token));
             } catch (e) {
               analysis[token.line] =
                   Result(false, "Tamaño inválido de variable");
@@ -768,7 +773,7 @@ class Analizer {
         .toList();
 
     for (Token label in validLabels) {
-      symbols.add(Symbol(label.value, "Etiqueta", "", 1, label.line));
+      symbols.add(Symbol(label.value, "Etiqueta", "", 1, label));
     }
   }
 
@@ -793,6 +798,56 @@ class Analizer {
       size = 2 * multiplier;
     }
     return size;
+  }
+
+  void _setDirection() {
+    int codeSegmentLine = tokens[
+            tokens.indexWhere((token) => token.type == TokenType.codeSegment)]
+        .line;
+
+    List<Symbol> dataSegmentSymbols =
+        symbols.where((symbol) => symbol.token.line < codeSegmentLine).toList();
+
+    List<Symbol> codeSegmentSymbols =
+        symbols.where((symbol) => symbol.token.line > codeSegmentLine).toList();
+
+    int direction = 0x250;
+    for (Symbol symbol in dataSegmentSymbols) {
+      symbol.direction = direction;
+      direction += symbol.size;
+    }
+
+    direction = 0x250;
+    for (Symbol symbol in codeSegmentSymbols) {
+      symbol.direction = direction;
+      direction += symbol.size;
+    }
+
+    direction = 0x250;
+    for (int i = 0; i < analysis.length; i++) {
+      if (i < codeSegmentLine) {
+        analysis[i].direction = direction;
+        if (symbols.any((symbol) => symbol.token.line == i)) {
+          direction =
+              symbols.firstWhere((symbol) => symbol.token.line == i).direction;
+        }
+      } else {
+        break;
+      }
+    }
+
+    direction = 0x250;
+    for (int i = 0; i < analysis.length; i++) {
+      if (i > codeSegmentLine) {
+        analysis[i].direction = direction;
+        if (symbols.any((symbol) => symbol.token.line == i)) {
+          direction =
+              symbols.firstWhere((symbol) => symbol.token.line == i).direction;
+        }
+      } else {
+        continue;
+      }
+    }
   }
 
   bool _verifySegments() {

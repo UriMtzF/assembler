@@ -6,6 +6,7 @@ enum TokenType {
   string,
   label,
   register,
+  segment,
   instruction, //Asigned instruction
   symbol, //Other instructions not assigned
   // Pseudoinstructions
@@ -243,4 +244,11 @@ final Set<String> registers = {
   'cl',
   'dh',
   'dl'
+};
+
+final Set<String> segments = {
+  "es",
+  "cs",
+  "ss",
+  "ds",
 };

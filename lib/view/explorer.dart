@@ -177,7 +177,7 @@ class AnalysisTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return PaginatedDataTable2(
       columns: const [
-        DataColumn(label: Text("Línea")),
+        DataColumn(label: Text("Contador")),
         DataColumn(label: Text("Código")),
         DataColumn(label: Text("Resultado")),
       ],
@@ -227,7 +227,7 @@ class SymbolDataSource extends DataTableSource {
       DataCell(Text(_symbols[index].type)),
       DataCell(Text(value)),
       DataCell(Text(size)),
-      DataCell(Text(_symbols[index].direction.toString())),
+      DataCell(Text("${_symbols[index].direction.toRadixString(16)}h")),
     ]);
   }
 
@@ -246,7 +246,7 @@ class AnalysisDataSource extends DataTableSource {
   DataRow? getRow(int index) {
     return DataRow(cells: [
       DataCell(
-        Text((index + 1).toString()),
+        Text("${_analysis[index].direction.toRadixString(16)}h"),
       ),
       DataCell(Text(_code[index] ?? "")),
       DataCell(
