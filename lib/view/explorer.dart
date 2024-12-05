@@ -47,6 +47,8 @@ class _ExplorerState extends ConsumerState<Explorer> {
       _analysis = analizer.analysis;
       _symbols = analizer.symbols;
       tokenDataSource = TokenDataSource();
+      symbolDataSource = SymbolDataSource();
+      analysisDataSource = AnalysisDataSource();
     }
 
     return Row(
@@ -244,16 +246,21 @@ class AnalysisDataSource extends DataTableSource {
 
   @override
   DataRow? getRow(int index) {
+    String analysis = "";
+    if (_analysis[index].isValid) {
+      analysis = _analysis[index].message.toUpperCase();
+    } else if (_analysis[index].message.contains("No analizado")) {
+      analysis = "";
+    } else {
+      analysis = "ERROR: ${_analysis[index].message}";
+    }
+
     return DataRow(cells: [
       DataCell(
         Text("${_analysis[index].direction.toRadixString(16)}h".toUpperCase()),
       ),
       DataCell(Text(_code[index] ?? "")),
-      DataCell(
-        Text(_analysis[index].isValid
-            ? _analysis[index].message.toUpperCase()
-            : "ERROR: ${_analysis[index].message}"),
-      ),
+      DataCell(Text(analysis)),
     ]);
   }
 
