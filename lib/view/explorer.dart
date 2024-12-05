@@ -1,23 +1,18 @@
-import 'dart:io';
-
-import 'package:assembler/control/controller.dart';
+import 'package:assembler/control/control.dart';
 import 'package:assembler/model/analizer.dart';
-import 'package:assembler/view/view_type.dart';
+import 'package:assembler/model/directives.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ignore: depend_on_referenced_packages
-import 'package:highlight/languages/x86asm.dart';
-// ignore: depend_on_referenced_packages, unused_import
-import 'package:flutter_highlight/themes/atom-one-light.dart';
-// ignore: depend_on_referenced_packages, unused_import
 import 'package:flutter_highlight/themes/atom-one-dark.dart';
 
-List<String> _tokens = [];
-List<String> _types = [];
+List<Token> _tokens = [];
+List<Result> _analysis = [];
 List<Symbol> _symbols = [];
+Map<int, String> _code = {};
 
 class Explorer extends ConsumerStatefulWidget {
   const Explorer({super.key});
@@ -28,38 +23,32 @@ class Explorer extends ConsumerStatefulWidget {
 
 class _ExplorerState extends ConsumerState<Explorer> {
   Analizer analizer = Analizer();
-  List<String> codeLines = [];
 
-  CodeController codeController = CodeController(language: x86Asm);
+  CodeController codeController = CodeController();
 
   DataTableSource tokenDataSource = TokenDataSource();
   DataTableSource symbolDataSource = SymbolDataSource();
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  List<String> _loadFileContent(File file) {
-    return file.readAsLinesSync();
-  }
+  DataTableSource analysisDataSource = AnalysisDataSource();
 
   @override
   Widget build(BuildContext context) {
-    final file = ref.watch(fileProvider);
-    final viewType = ref.watch(viewProvider);
-    if (file != null) {
-      final newLines = _loadFileContent(file);
-      if (newLines != codeLines) {
-        codeLines = newLines;
-        codeController.text = codeLines.join('\n');
-        analizer.setCode = newLines;
-        _tokens = analizer.tokens;
-        _types = analizer.typesString;
-        analizer.checkLines();
-        _symbols = analizer.symbolsDetail;
-        tokenDataSource = TokenDataSource();
-      }
+    List<String> newCode = ref.watch(codeStateProvider);
+    codeController.text = newCode.join('\n');
+    if (newCode != analizer.code) {
+      analizer = Analizer();
+
+      analizer.code = newCode;
+      analizer.clearCode();
+      analizer.tokenize();
+      analizer.identifyTypes();
+      analizer.analizeCode();
+      _code = analizer.cleanCode;
+      _tokens = analizer.tokens;
+      _analysis = analizer.analysis;
+      _symbols = analizer.symbols;
+      tokenDataSource = TokenDataSource();
+      symbolDataSource = SymbolDataSource();
+      analysisDataSource = AnalysisDataSource();
     }
 
     return Row(
@@ -69,7 +58,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
             children: [
               const Text(
                 "Código",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
               ),
               Expanded(
                 child: CodeTheme(
@@ -80,7 +69,7 @@ class _ExplorerState extends ConsumerState<Explorer> {
                     readOnly: true,
                   ),
                 ),
-              ),
+              )
             ],
           ),
         ),
@@ -88,127 +77,114 @@ class _ExplorerState extends ConsumerState<Explorer> {
           width: 10,
         ),
         Expanded(
-          child: viewType == ViewType.lineAnalysis
-              ? LineAnalysis(
-                  analysisResult: analizer.analysis,
-                )
-              : viewType == ViewType.symbolTable
-                  ? SymbolTable(dataSource: symbolDataSource)
-                  : TokenTable(dataSource: tokenDataSource),
-        ),
-        // Expanded(
-        //   child: TokenTable(dataSource: dataSource),
-        // ),
-      ],
-    );
-  }
-}
-
-class LineAnalysis extends StatelessWidget {
-  final List<Result> analysisResult;
-  const LineAnalysis({super.key, required this.analysisResult});
-
-  @override
-  Widget build(BuildContext context) {
-    String analysis = analysisResult
-        .map((Result element) =>
-            element.isValid ? element.message : 'Error: ${element.message}')
-        .toList()
-        .join('\n');
-    CodeController controller = CodeController(text: analysis);
-
-    return Column(
-      children: [
-        const Text(
-          "Análisis línea por línea",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-        Expanded(
-          child: CodeTheme(
-            data: const CodeThemeData(styles: atomOneLightTheme),
-            child: CodeField(
-              controller: controller,
-              expands: true,
-              horizontalScroll: true,
-              readOnly: true,
+          child: DefaultTabController(
+            length: 3,
+            initialIndex: 0,
+            child: Column(
+              children: [
+                const TabBar(
+                  tabs: [
+                    Tab(
+                      icon: Icon(Icons.table_chart),
+                      text: "Tabla de tokens",
+                    ),
+                    Tab(
+                      icon: Icon(Icons.table_rows_rounded),
+                      text: "Tabla de símbolos",
+                    ),
+                    Tab(
+                      icon: Icon(Icons.table_rows_outlined),
+                      text: "Análisis línea a línea",
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      TokenTable(dataSource: tokenDataSource),
+                      SymbolTable(dataSource: symbolDataSource),
+                      AnalysisTable(dataSource: analysisDataSource),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        )
+        ),
       ],
     );
   }
 }
 
 class SymbolTable extends StatelessWidget {
-  const SymbolTable({
-    super.key,
-    required this.dataSource,
-  });
+  const SymbolTable({super.key, required this.dataSource});
 
   final DataTableSource dataSource;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Text(
-          "Tabla de símbolos",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+//Nombre, tipo, valor, tamaño, dirección
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(
+          label: Text("Nombre"),
         ),
-        Flexible(
-          child: PaginatedDataTable2(
-            columns: const [
-              DataColumn(
-                label: Text("Símbolo"),
-              ),
-              DataColumn(
-                label: Text("Tipo"),
-              ),
-              DataColumn(
-                label: Text("Valor"),
-              ),
-              DataColumn(
-                label: Text("Tamaño"),
-              ),
-            ],
-            source: dataSource,
-          ),
+        DataColumn(
+          label: Text("Tipo"),
+        ),
+        DataColumn(
+          label: Text("Valor"),
+        ),
+        DataColumn(
+          label: Text("Tamaño"),
+        ),
+        DataColumn(
+          label: Text("Dirección"),
         ),
       ],
+      source: dataSource,
+      rowsPerPage: 9,
     );
   }
 }
 
 class TokenTable extends StatelessWidget {
-  const TokenTable({
-    super.key,
-    required this.dataSource,
-  });
+  const TokenTable({super.key, required this.dataSource});
 
   final DataTableSource dataSource;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Text(
-          "Tokens y tipos",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(
+          label: Text("Tokens"),
         ),
-        Flexible(
-          child: PaginatedDataTable2(
-            columns: const [
-              DataColumn(
-                label: Text("Tokens"),
-              ),
-              DataColumn(
-                label: Text("Tipo"),
-              )
-            ],
-            source: dataSource,
-          ),
+        DataColumn(
+          label: Text("Tipo"),
         ),
       ],
+      source: dataSource,
+      rowsPerPage: 9,
+    );
+  }
+}
+
+class AnalysisTable extends StatelessWidget {
+  const AnalysisTable({super.key, required this.dataSource});
+
+  final DataTableSource dataSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return PaginatedDataTable2(
+      columns: const [
+        DataColumn(label: Text("Contador")),
+        DataColumn(label: Text("Código")),
+        DataColumn(label: Text("Resultado")),
+      ],
+      source: dataSource,
+      rowsPerPage: 9,
     );
   }
 }
@@ -219,19 +195,14 @@ class TokenDataSource extends DataTableSource {
 
   @override
   DataRow? getRow(int index) {
-    if (_tokens.isEmpty || _types.isEmpty) {
-      return null;
-    }
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(_tokens[index]),
-        ),
-        DataCell(
-          Text(_types[index]),
-        ),
-      ],
-    );
+    return DataRow(cells: [
+      DataCell(
+        Text(_tokens[index].value),
+      ),
+      DataCell(
+        Text(_tokens[index].type.description),
+      ),
+    ]);
   }
 
   @override
@@ -243,29 +214,54 @@ class TokenDataSource extends DataTableSource {
 
 class SymbolDataSource extends DataTableSource {
   @override
-  int get rowCount => (_symbols.length / 2).ceil();
+  int get rowCount => _symbols.length;
 
   @override
   DataRow? getRow(int index) {
-    if (_symbols.isEmpty) {
-      return null;
+    String value =
+        _symbols[index].type == "Etiqueta" ? "" : _symbols[index].value;
+    String size = _symbols[index].type == "Etiqueta"
+        ? ""
+        : _symbols[index].size.toString();
+
+    return DataRow(cells: [
+      DataCell(Text(_symbols[index].name)),
+      DataCell(Text(_symbols[index].type)),
+      DataCell(Text(value)),
+      DataCell(Text(size)),
+      DataCell(Text("${_symbols[index].direction.toRadixString(16)}h")),
+    ]);
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+class AnalysisDataSource extends DataTableSource {
+  @override
+  int get rowCount => _analysis.length;
+
+  @override
+  DataRow? getRow(int index) {
+    String analysis = "";
+    if (_analysis[index].isValid) {
+      analysis = _analysis[index].message.toUpperCase();
+    } else if (_analysis[index].message.contains("No analizado")) {
+      analysis = "";
+    } else {
+      analysis = "ERROR: ${_analysis[index].message}";
     }
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(_symbols[index].name),
-        ),
-        DataCell(
-          Text(_symbols[index].type.name),
-        ),
-        DataCell(
-          Text(_symbols[index].value),
-        ),
-        DataCell(
-          Text(_symbols[index].size),
-        ),
-      ],
-    );
+
+    return DataRow(cells: [
+      DataCell(
+        Text("${_analysis[index].direction.toRadixString(16)}h".toUpperCase()),
+      ),
+      DataCell(Text(_code[index] ?? "")),
+      DataCell(Text(analysis)),
+    ]);
   }
 
   @override

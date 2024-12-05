@@ -1,49 +1,51 @@
 enum TokenType {
-  instruction,
-  symbol,
-  register,
-  decNumber,
   binNumber,
+  octNumber,
+  decNumber,
   hexNumber,
+  string,
   label,
-  compundDirective,
-  model,
-  codeSegment,
-  dataSegment,
+  register,
+  segment,
+  instruction, //Asigned instruction
+  symbol, //Other instructions not assigned
+  // Pseudoinstructions
   stackSegment,
+  dataSegment,
+  codeSegment,
+  ends,
+  defineByte,
+  defineWord,
+  equ,
   bytePtr,
   wordPtr,
   dup,
   bracket,
-  doubleQuotes,
-  singleQuotes,
-  defineByte,
-  defineWord,
-  equ,
-  end,
+  model,
   unknown,
 }
 
-// Set the description for each token type
 extension TokenTypeExtension on TokenType {
   String get description {
     switch (this) {
+      case TokenType.decNumber:
+        return 'Constante numérica decimal';
+      case TokenType.binNumber:
+        return 'Constante numérica binaria';
+      case TokenType.hexNumber:
+        return 'Constante numérica hexadecimal';
+      case TokenType.octNumber:
+        return 'Constante numérica octal';
+      case TokenType.string:
+        return 'Cadena';
       case TokenType.symbol:
         return 'Símbolo';
       case TokenType.instruction:
         return 'Instrucción';
       case TokenType.register:
         return 'Registro';
-      case TokenType.decNumber:
-        return 'Número decimal';
-      case TokenType.binNumber:
-        return 'Número binario';
-      case TokenType.hexNumber:
-        return 'Número hexadecimal';
       case TokenType.label:
         return 'Etiqueta';
-      case TokenType.compundDirective:
-        return 'Pseudoinstrucción';
       case TokenType.model:
         return 'Modelo';
       case TokenType.codeSegment:
@@ -60,46 +62,52 @@ extension TokenTypeExtension on TokenType {
         return 'Dup';
       case TokenType.bracket:
         return 'Corchetes';
-      case TokenType.doubleQuotes:
-        return 'Cadena (comilla dobles)';
-      case TokenType.singleQuotes:
-        return 'Cadena (comillas simples)';
       case TokenType.defineByte:
         return 'Definición byte';
       case TokenType.defineWord:
         return 'Definición palabra';
       case TokenType.equ:
         return 'Definición de constante';
-      case TokenType.end:
+      case TokenType.ends:
         return 'Final';
       case TokenType.unknown:
         return 'Desconocido';
       default:
-        return 'Desconocido';
+        return 'No asignado';
     }
   }
 }
 
-// Map each pseudoinstruction type with its Regular Expresion
+final binNumberRegExp = RegExp(r'^-?[01]+b\b');
+final octNumberRegExp = RegExp(r'^-?[0-7]+o\b');
+final decNumberRegExp = RegExp(r'^-?\d+d?\b');
+final hexNumberRegExp = RegExp(r'^-?(0x|0)[a-f0-9]+h\b');
+final labelRegExp = RegExp(r'^[a-zA-Z_][0-9a-zA-Z_]*:?$');
+
 final Map<TokenType, RegExp> directiveRegExp = {
-  TokenType.model: RegExp(r'\.model small\b'),
-  TokenType.codeSegment: RegExp(r'\.code segment\b'),
-  TokenType.dataSegment: RegExp(r'\.data segment\b'),
-  TokenType.stackSegment: RegExp(r'\.stack segment\b'),
-  TokenType.bytePtr: RegExp(r'\bbyte ptr\b'),
-  TokenType.wordPtr: RegExp(r'\bword ptr\b'),
-  TokenType.dup: RegExp(r'dup\([^)]+\)'),
-  TokenType.bracket: RegExp(r'\[[^\]]+\]'),
-  TokenType.doubleQuotes: RegExp(r'"[^"]*"'),
-  TokenType.singleQuotes: RegExp(r"'[^']*'"),
-  TokenType.defineByte: RegExp(r'^db\b'),
-  TokenType.defineWord: RegExp(r'^dw\b'),
-  TokenType.equ: RegExp(r'^equ\b'),
-  TokenType.end: RegExp(r'^ends\b'),
+  TokenType.stackSegment: RegExp(r'^\.stack segment$'),
+  TokenType.dataSegment: RegExp(r'^\.data segment$'),
+  TokenType.codeSegment: RegExp(r'^\.code segment$'),
+  TokenType.ends: RegExp(r'^ends$'),
+  TokenType.defineByte: RegExp(r'^db$'),
+  TokenType.defineWord: RegExp(r'^dw$'),
+  TokenType.equ: RegExp(r'^equ$'),
+  TokenType.bytePtr: RegExp(r'\bbyte\s+ptr\b'),
+  TokenType.wordPtr: RegExp(r'\bword\s+ptr\b'),
+  TokenType.dup: RegExp(r'\bdup\((.*?)\)'),
+  TokenType.bracket: RegExp(r'^\[[^\]]+\]$'),
+  TokenType.model: RegExp(r'^\.model small$'),
+  TokenType.string: RegExp('(["\'])(.*?)(\\1)'),
 };
 
-// List all instructions
-final Set<String> symbols = {
+final Set<TokenType> numberTokens = {
+  TokenType.binNumber,
+  TokenType.octNumber,
+  TokenType.decNumber,
+  TokenType.hexNumber,
+};
+
+final Set<String> symbolsSet = {
   "aad",
   "aam",
   "aas",
@@ -197,7 +205,6 @@ final Set<String> symbols = {
   "test",
   "xchg",
 };
-
 final Set<String> instructions = {
   "cld",
   "cli",
@@ -220,8 +227,6 @@ final Set<String> instructions = {
   "jnp",
   "jp"
 };
-
-// List all registers
 final Set<String> registers = {
   'ax',
   'bx',
@@ -241,10 +246,9 @@ final Set<String> registers = {
   'dl'
 };
 
-// Regular Expresion for number types (Hex, Dec, Bin)
-final RegExp decNumberRegExp = RegExp(r'^-?\d+');
-final RegExp binNumberRegExp = RegExp(r'^-?[01]+b\b$');
-final RegExp hexNumberRegExp = RegExp(r'^-?(0x|0)[a-f0-9]+h\b');
-// Regular Expresion for valid labels
-final RegExp labelRegExp = RegExp(r'\b[a-zA-Z_][a-zA-Z0-9_]*(:?)');
-final RegExp dataSegRegExp = RegExp(r'@data$');
+final Set<String> segments = {
+  "es",
+  "cs",
+  "ss",
+  "ds",
+};

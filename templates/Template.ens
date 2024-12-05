@@ -1,0 +1,109 @@
+.stack segment
+  db 100 dup(0)
+ends
+
+.data segment
+  ; Definiciones correctas
+  dec_b db 10
+  dec_w dw 10
+  bin_b db 01010101b
+  bin_w dw 0110100101100110b
+  hex_b db 024h
+  hex_w dw 024fah
+  cons equ 12
+  ; Definiciones incorrectas
+  w_dec_b d 10
+  w_dec_w = 10
+  w_bin_b dw 01010101b
+  w_bin_w db 0110100101100110b
+  equ w_constant 12
+ends
+
+.code segment
+  ; CLD - Clear Direction Flag
+    cld                    ; Correct: CLD se usa sin operandos
+    cld ax                 ; Incorrecto: CLD no toma operandos
+
+    ; CLI - Clear Interrupt Flag
+    cli                    ; Correct: CLI se usa sin operandos
+    cli 0x10               ; Incorrecto: CLI no toma operandos
+
+    ; MOVSB - Move Byte from String to String
+    movsb                  ; Correct: MOVSB se usa sin operandos para copiar bytes
+    movsb ax, bx           ; Incorrecto: MOVSB no toma operandos explícitos
+
+    ; MOVSW - Move Word from String to String
+    movsw                  ; Correct: MOVSW se usa sin operandos para copiar palabras
+    movsw bx, ax           ; Incorrecto: MOVSW no toma operandos explícitos
+
+    ; XLATB - Table Lookup Translation
+    xlatb                  ; Correct: XLATB se usa sin operandos
+    xlatb bx               ; Incorrecto: XLATB no toma operandos
+
+    ; AAA - ASCII Adjust After Addition
+    aaa                    ; Correct: AAA se usa sin operandos
+    aaa ax, bx             ; Incorrecto: AAA no toma operandos
+
+    ; POP - Pop a value from the stack
+    pop ax                 ; Correct: POP necesita un registro como operando
+    pop bx, cx             ; Incorrecto: POP solo toma un operando
+
+    ; IDIV - Signed Integer Division
+    mov ax, 10             ; Preparando para dividir
+    mov bx, 2
+    idiv bx                ; Correct: IDIV usa un único operando (divisor)
+    idiv ax, bx            ; Incorrecto: IDIV solo toma un operando
+
+    ; PUSH - Push a value onto the stack
+    push ax                ; Correct: PUSH toma un solo operando
+    push bx, cx            ; Incorrecto: PUSH solo toma un operando
+
+    ; DEC - Decrement by 1
+    dec ax                 ; Correct: DEC toma un operando que puede ser un registro
+    dec                    ; Incorrecto: DEC requiere un operando
+
+    ; ROR - Rotate Right
+    ror ax, 1              ; Correct: ROR usa dos operandos: destino y número de bits
+    ror ax                 ; Incorrecto: Falta el segundo operando en ROR
+
+    ; SUB - Subtract
+    sub ax, bx             ; Correct: SUB necesita dos operandos: destino y valor a restar
+    sub ax                 ; Incorrecto: Falta el segundo operando en SUB
+
+    ; XOR - Logical Exclusive OR
+    xor ax, ax             ; Correct: XOR toma dos operandos
+    xor ax                 ; Incorrecto: Falta el segundo operando en XOR
+
+    ; AND - Logical AND
+    and ax, bx             ; Correct: AND toma dos operandos
+    and ax                 ; Incorrecto: Falta el segundo operando en AND
+
+    ; JAE - Jump if Above or Equal
+    jae label              ; Correct: JAE toma una etiqueta como operando
+    jae                    ; Incorrecto: Falta el operando en JAE
+
+    ; JCXZ - Jump if CX is Zero
+    jcxz label             ; Correct: JCXZ toma una etiqueta como operando
+    jcxz                   ; Incorrecto: Falta el operando en JCXZ
+
+    ; JL - Jump if Less
+    jl label               ; Correct: JL toma una etiqueta como operando
+    jl                     ; Incorrecto: Falta el operando en JL
+
+    ; JNGE - Jump if Not Greater or Equal
+    jnge label             ; Correct: JNGE toma una etiqueta como operando
+    jnge                   ; Incorrecto: Falta el operando en JNGE
+
+    ; JNP - Jump if Not Parity
+    jnp label              ; Correct: JNP toma una etiqueta como operando
+    jnp                    ; Incorrecto: Falta el operando en JNP
+
+    ; JP - Jump if Parity
+    jp label               ; Correct: JP toma una etiqueta como operando
+    jp                     ; Incorrecto: Falta el operando en JP
+
+label:
+    ; Fin del programa
+    mov eax, 1             ; syscall: salida
+    int 0x80               ; llamada al sistema
+ends
